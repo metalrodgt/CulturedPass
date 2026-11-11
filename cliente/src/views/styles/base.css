@@ -1,0 +1,225 @@
+/* ===== Variables y estilos base (mobile-first) ===== */
+:root {
+  --vino: #5e120a;
+  --vino-oscuro: #3f0b06;
+  --gris: #ded9db;
+  --naranja: #e08f43;
+  --verde: #86d13a;
+  --rojo: #f73838;
+  --azul-activo: #4f2fe0;
+  --texto: #111;
+  --fuente: 'Times New Roman', Times, 'Liberation Serif', serif;
+  --alto-navbar: 66px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-padding-top: calc(var(--alto-navbar) + 12px);
+}
+
+body {
+  margin: 0;
+  font-family: var(--fuente);
+  color: var(--texto);
+  background: #2a0d09;
+  min-height: 100vh;
+  min-height: 100dvh;
+  line-height: 1.35;
+}
+
+/* Fondo de teatro fijo. Opcional: guarda tu foto como cliente/public/fondo-teatro.jpg */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(rgba(42, 13, 9, 0.35), rgba(42, 13, 9, 0.6)),
+    url('/fondo-teatro.jpg') center / cover no-repeat,
+    radial-gradient(ellipse at 50% 0%, #8f5240 0%, #4d1d14 55%, #2a0d09 100%);
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+h1, h2, h3, h4, p, ul, dl, dd {
+  margin: 0;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: 0;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid var(--azul-activo);
+  outline-offset: 2px;
+}
+
+/* Íconos de Google Fonts (Material Symbols) */
+.material-symbols-rounded {
+  font-family: 'Material Symbols Rounded';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 1.4em;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  vertical-align: middle;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+}
+
+/* ===== Botones ===== */
+.boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  padding: 0.6rem 1.4rem;
+  border-radius: 9px;
+  background: var(--naranja);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.05rem;
+  text-decoration: none;
+  text-align: center;
+  transition: filter 0.15s, transform 0.05s;
+}
+.boton:hover:not(:disabled) { filter: brightness(1.08); }
+.boton:active:not(:disabled) { transform: translateY(1px); }
+.boton:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.boton--verde { background: var(--verde); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); }
+.boton--rojo { background: var(--rojo); }
+.boton--vino { background: var(--vino); }
+.boton--grande { font-size: 1.25rem; padding: 0.7rem 1.8rem; }
+.boton--chico { min-height: 38px; padding: 0.35rem 1.1rem; font-size: 0.98rem; }
+.boton--enlace {
+  background: none;
+  color: var(--texto);
+  padding: 0.3rem 0.5rem;
+  min-height: 36px;
+  text-decoration: underline;
+}
+.boton--claro { color: #fff; }
+
+.icono-boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  background: none;
+  color: #000;
+  border-radius: 10px;
+  font-size: 1.15rem;
+}
+.icono-boton .material-symbols-rounded { font-size: 1.9rem; }
+.icono-boton--peligro { color: var(--rojo); }
+.icono-boton:hover:not(:disabled) { background: rgba(0, 0, 0, 0.08); }
+.icono-boton:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* ===== Formularios ===== */
+.entrada {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.6rem 1.1rem;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: var(--gris);
+  color: #111;
+  font-weight: 700;
+  font-size: 1rem; /* 16px: evita el zoom automático en iPhone */
+}
+textarea.entrada { border-radius: 22px; resize: vertical; min-height: 110px; line-height: 1.4; }
+.entrada:focus { outline: none; border-color: var(--naranja); }
+.entrada[aria-invalid='true'] { border-color: var(--rojo); }
+.entrada[readonly] { opacity: 0.8; }
+.entrada--codigo { text-align: center; letter-spacing: 0.3em; font-size: 1.3rem; text-transform: uppercase; }
+.entrada--insignia {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-width: 44px;
+  padding: 0.5rem 0.9rem;
+}
+
+.entrada-con-icono { position: relative; }
+.entrada-con-icono .entrada { padding-right: 3rem; }
+.entrada-con-icono__boton {
+  position: absolute;
+  right: 0.35rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  color: #333;
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: 50%;
+}
+
+.campo { display: grid; gap: 0.35rem; margin-bottom: 0.9rem; }
+.campo__etiqueta { font-weight: 700; color: #fff; }
+.campo__control { display: grid; gap: 0.3rem; min-width: 0; }
+.campo__ayuda { color: #f1d7d3; font-size: 0.88rem; }
+.campo__error { color: #ffb4ab; font-weight: 700; font-size: 0.92rem; }
+
+@media (min-width: 640px) {
+  .campo { grid-template-columns: 190px 1fr; gap: 0.75rem; align-items: start; }
+  .campo__etiqueta { text-align: right; padding-top: 0.65rem; }
+}
+
+/* ===== Utilidades ===== */
+.separador {
+  width: 65%;
+  border: 0;
+  border-top: 3px solid #000;
+  margin: 0.4rem auto;
+}
+
+.logo-circulo {
+  border-radius: 50%;
+  border: 3px solid #fff;
+  object-fit: cover;
+  background: #262626;
+}
+
+.imagen-vacia {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #2b0a06;
+  color: #fff;
+}
+.imagen-vacia .material-symbols-rounded { font-size: 3.5rem; opacity: 0.8; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; scroll-behavior: auto !important; }
+}

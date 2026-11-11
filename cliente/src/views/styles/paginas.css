@@ -1,0 +1,17 @@
+/* Ajustes específicos de pantallas.
+   La mayor parte del diseño está en layout.css, componentes.css y modales.css */
+
+.cargando { text-align: center; padding: 3rem 1rem; color: #fff; font-weight: 700; }
+
+/* Pantallas muy angostas (celulares pequeños) */
+@media (max-width: 380px) {
+  .navbar__nombre { font-size: 1.3rem; }
+  .boton { padding-left: 1rem; padding-right: 1rem; }
+  .tarjeta { padding: 0.8rem; }
+}
+
+/* Celulares en horizontal: modales más compactos */
+@media (max-height: 520px) {
+  .modal { padding-top: 1rem; padding-bottom: 1rem; }
+  .modal__logo { display: none; }
+}

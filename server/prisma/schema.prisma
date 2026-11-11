@@ -1,0 +1,78 @@
+// Refleja EXACTAMENTE las tablas que ya existen en Supabase.
+// NO ejecutes "prisma migrate" ni "prisma db push": la base ya está creada
+// (incluye restricciones CHECK que Prisma no representa).
+// Solo se usa "prisma generate" para crear el cliente.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum EstadoEvento {
+  Disponible
+  Finalizado
+
+  @@map("estado_evento")
+}
+
+enum EstadoAsistencia {
+  Ausente
+  Presente
+
+  @@map("estado_asistencia")
+}
+
+model Organizador {
+  id_organizador Int      @id @default(autoincrement())
+  nombre         String
+  gmail          String   @unique(map: "uq_organizador_gmail")
+  numero_tel     String
+  contrasena     String
+  aprobacion     Boolean  @default(false)
+  administrador  Boolean  @default(false)
+  eventos        Evento[]
+
+  @@map("organizador")
+}
+
+model Evento {
+  id_evento         Int          @id @default(autoincrement())
+  id_organizador    Int
+  nombre_evento     String
+  nombre_encargado  String
+  numero_telefono   String
+  fecha_evento      DateTime     @db.Date
+  ubicacion         String
+  hora_inicio       DateTime     @db.Time(6)
+  hora_finalizacion DateTime     @db.Time(6)
+  portada           String
+  estado            EstadoEvento @default(Disponible)
+  cupo_total        Int
+  cupo_disponible   Int
+  descripcion       String
+  organizador       Organizador  @relation(fields: [id_organizador], references: [id_organizador], onDelete: Cascade, onUpdate: Cascade, map: "fk_evento_organizador")
+  boletos           Boleto[]
+
+  @@index([id_organizador], map: "idx_evento_organizador")
+  @@index([estado, fecha_evento], map: "idx_evento_estado_fecha")
+  @@map("evento")
+}
+
+model Boleto {
+  id_boleto       Int              @id @default(autoincrement())
+  id_evento       Int
+  fecha_creacion  DateTime         @default(now()) @db.Timestamptz(6)
+  nombre          String
+  gmail           String
+  codigo          String           @unique(map: "uq_boleto_codigo")
+  estado          EstadoAsistencia @default(Ausente)
+  hora_asistencia DateTime?        @db.Timestamptz(6)
+  evento          Evento           @relation(fields: [id_evento], references: [id_evento], onDelete: Cascade, onUpdate: Cascade, map: "fk_boleto_evento")
+
+  @@unique([id_evento, gmail], map: "uq_boleto_evento_gmail")
+  @@map("boleto")
+}
