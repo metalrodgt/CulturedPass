@@ -10,7 +10,7 @@ import rutas from './routes/index.js';
 const app = express();
 
 // Si algún día se despliega detrás de un proxy (Render, Nginx...), activar:
-// app.set('trust proxy', 1);
+app.set('trust proxy', 1);
 
 app.use(helmet()); // cabeceras de seguridad HTTP
 app.use(
