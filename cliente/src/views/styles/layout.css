@@ -220,3 +220,18 @@
   width: 100%;
 }
 .hero__botones .boton { flex: 1 1 150px; max-width: 250px; }
+
+
+/* ===== Portada en celular: texto dentro del telón, botones apilados ===== */
+@media (max-width: 640px) {
+  .hero { padding: 0.5rem 0 0; }
+  .escenario { padding: 96px 17% 56px; }          /* los % son sobre el ancho */
+  .escenario__fondo { left: 11%; right: 11%; top: 13%; }
+  .escenario__contenido { gap: 0.5rem; }
+  .hero__sub { font-size: 1.05rem; }
+  .hero__titulo { font-size: 2.6rem; }
+  .hero__texto { font-size: 0.95rem; }
+
+  .hero__botones { flex-direction: column; align-items: stretch; gap: 0.8rem; }
+  .hero__botones .boton { flex: none; max-width: none; width: 100%; }
+}

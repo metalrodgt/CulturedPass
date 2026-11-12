@@ -4,8 +4,8 @@ Proyecto con dos carpetas independientes dentro de una raíz común:
 
 ```
 CulturedPass/
-├── server/        ← Backend (Node.js + Express + Prisma)   [ENTREGADO]
-├── cliente/       ← Frontend (Vite + React, patrón MVC)    [pendiente: se desarrolla con el maquetado]
+├── server/        ← Backend (Node.js + Express + Prisma)   
+├── cliente/       ← Frontend (Vite + React, patrón MVC)    
 ├── .gitignore
 └── README.md
 ```

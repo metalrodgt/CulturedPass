@@ -37,21 +37,13 @@ body {
 body::before {
   content: '';
   position: fixed;
-  inset: 0;
+  inset: -24px;            /* sobra a propósito: el blur deja bordes claros si no */
   z-index: -1;
   background:
     linear-gradient(rgba(42, 13, 9, 0.35), rgba(42, 13, 9, 0.6)),
     url('/fondo-teatro.jpg') center / cover no-repeat,
     radial-gradient(ellipse at 50% 0%, #8f5240 0%, #4d1d14 55%, #2a0d09 100%);
-}
-
-img {
-  display: block;
-  max-width: 100%;
-}
-
-h1, h2, h3, h4, p, ul, dl, dd {
-  margin: 0;
+  filter: blur(6px);       /* sube o baja este valor a gusto */
 }
 
 button,
