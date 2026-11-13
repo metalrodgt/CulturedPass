@@ -3,7 +3,7 @@ import ImagenPortada from './ImagenPortada.jsx';
 import Icono from './Icono.jsx';
 
 // Tarjeta de evento con tres variantes:
-//  - 'disponible': sección Eventos (visitantes)
+//  - 'disponible': sección Eventos
 //  - 'finalizado': página principal (publicidad de eventos pasados)
 //  - 'gestion'   : panel del organizador (editar / asistencia / eliminar)
 export default function TarjetaEvento({ evento, variante = 'disponible', onVerMas, onEditar, onAsistencia, onEliminar }) {
@@ -11,6 +11,11 @@ export default function TarjetaEvento({ evento, variante = 'disponible', onVerMa
   const agotado = !finalizado && evento.cupo_disponible <= 0;
   const claseEstado = finalizado ? 'etiqueta--apagada' : agotado ? 'etiqueta--agotado' : '';
   const textoEstado = finalizado ? 'Finalizado' : agotado ? 'Agotado' : 'Disponible';
+
+  // Si el evento termina al día siguiente se aclara cuál es ese día (ej. "02:00 (18/11)")
+  const horario = `${evento.hora_inicio} - ${evento.hora_finalizacion}${
+    evento.fecha_final ? ` (${fechaLegible(evento.fecha_final).slice(0, 5)})` : ''
+  }`;
 
   return (
     <article className="tarjeta">
@@ -29,12 +34,12 @@ export default function TarjetaEvento({ evento, variante = 'disponible', onVerMa
             <Icono nombre="event" /> {fechaLegible(evento.fecha_evento)}
           </span>
           <span>
-            <Icono nombre="schedule" /> {evento.hora_inicio} - {evento.hora_finalizacion}
+            <Icono nombre="schedule" /> {horario}
           </span>
         </p>
         <p className="tarjeta__datos">
           <span>Encargado: {evento.nombre_encargado}</span>
-          <span>Teléfono: {evento.numero_telefono}</span>
+          <span>Ubicación: {evento.ubicacion}</span>
         </p>
       </div>
 
@@ -51,14 +56,9 @@ export default function TarjetaEvento({ evento, variante = 'disponible', onVerMa
         )}
 
         {variante === 'finalizado' && (
-          <>
-            <span className="tarjeta__texto">
-              <Icono nombre="location_on" /> {evento.ubicacion}
-            </span>
-            <button type="button" className="boton boton--enlace boton--claro" onClick={onVerMas}>
-              Ver más
-            </button>
-          </>
+          <button type="button" className="boton boton--enlace boton--claro" onClick={onVerMas}>
+            Ver más
+          </button>
         )}
 
         {variante === 'gestion' && (

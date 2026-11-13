@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { diaSiguiente } from '../utils/fechas.js';
 
 const SIN_HTML_UNA_LINEA = /^[^<>\r\n]*$/;
 const SIN_HTML = /^[^<>]*$/;
@@ -54,6 +55,10 @@ export const registroSchema = z.object({
   gmail,
   numero_tel: telefono,
   contrasena,
+  clave: z
+    .string({ required_error: 'La clave de registro es obligatoria' })
+    .min(1, 'La clave de registro es obligatoria')
+    .max(100, 'La clave es demasiado larga'),
 });
 
 export const loginSchema = z.object({
@@ -68,6 +73,11 @@ export const eventoSchema = z
     nombre_encargado: texto('El nombre del encargado', 100),
     numero_telefono: telefono,
     fecha_evento: fecha,
+    // Opcional: solo puede ser el día siguiente a fecha_evento
+    fecha_final: z
+      .union([fecha, z.literal(''), z.null()])
+      .optional()
+      .transform((v) => v || null),
     ubicacion: texto('La ubicación', 200),
     hora_inicio: hora,
     hora_finalizacion: hora,
@@ -80,9 +90,23 @@ export const eventoSchema = z
     descripcion: texto('La descripción', 5000, { multilinea: true }),
   })
   // Regla 11
-  .refine((d) => d.hora_finalizacion > d.hora_inicio, {
-    message: 'La hora de finalización debe ser posterior a la hora de inicio',
-    path: ['hora_finalizacion'],
+  .superRefine((d, ctx) => {
+    if (d.fecha_final) {
+      // Con fecha final, la hora de fin puede ser menor a la de inicio (es de otro día)
+      if (d.fecha_final !== diaSiguiente(d.fecha_evento ?? '')) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'La fecha final solo puede ser el día siguiente a la fecha del evento',
+          path: ['fecha_final'],
+        });
+      }
+    } else if (d.hora_finalizacion <= d.hora_inicio) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'La hora de finalización debe ser posterior a la de inicio (o agrega una fecha final)',
+        path: ['hora_finalizacion'],
+      });
+    }
   });
 
 // ----- Boletos -----

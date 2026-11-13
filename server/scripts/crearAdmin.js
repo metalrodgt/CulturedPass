@@ -6,7 +6,7 @@ import '../src/config/env.js';
 import { prisma } from '../src/config/prisma.js';
 import { registroSchema } from '../src/validators/schemas.js';
 
-const entrada = registroSchema.safeParse({
+const entrada = registroSchema.omit({ clave: true }).safeParse({
   nombre: process.env.ADMIN_NOMBRE,
   gmail: process.env.ADMIN_GMAIL,
   numero_tel: process.env.ADMIN_TEL,

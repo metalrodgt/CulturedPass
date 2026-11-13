@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { autenticar } from '../middlewares/auth.js';
+import { autenticar, soloAdministrador } from '../middlewares/auth.js';
 import { validar } from '../middlewares/validar.js';
 import {
   aprobacionSchema,
@@ -32,6 +32,8 @@ router.patch('/boletos/:id/asistencia', id, validar(asistenciaSchema), boletos.m
 
 // --- Cuentas ---
 router.get('/organizadores', organizadores.listar);
+// Solo el administrador puede ver la clave de registro
+router.get('/clave', soloAdministrador, organizadores.verClave);
 router.get('/organizadores/:id/impacto', id, organizadores.impactoEliminacion);
 router.put('/organizadores/:id', id, validar(editarOrganizadorSchema), organizadores.editar);
 router.patch('/organizadores/:id/aprobacion', id, validar(aprobacionSchema), organizadores.cambiarAprobacion);

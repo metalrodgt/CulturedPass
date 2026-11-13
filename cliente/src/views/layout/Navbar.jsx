@@ -78,11 +78,13 @@ export default function Navbar() {
             Eventos
           </NavLink>
 
+          {/* Regla 23: los organizadores también pueden inscribirse, por eso también ven "Cancelar inscripción" */}
+          <button type="button" className="navbar__enlace" onClick={abrir('cancelar')}>
+            Cancelar inscripción
+          </button>
+
           {!usuario && (
             <>
-              <button type="button" className="navbar__enlace" onClick={abrir('cancelar')}>
-                Cancelar inscripción
-              </button>
               <div className="navbar__sesion">
                 <button type="button" className="navbar__enlace" onClick={abrir('login')}>
                   Login
@@ -105,6 +107,11 @@ export default function Navbar() {
               <NavLink to="/gestion/cuentas" className={claseEnlace}>
                 Cuentas
               </NavLink>
+              {usuario.administrador && (
+                <button type="button" className="navbar__enlace" onClick={abrir('clave-registro')}>
+                  Clave
+                </button>
+              )}
               <div className="navbar__sesion">
                 <button type="button" className="navbar__enlace navbar__enlace--chico" onClick={salir}>
                   Cerrar sesión

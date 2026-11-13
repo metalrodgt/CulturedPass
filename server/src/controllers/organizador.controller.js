@@ -1,8 +1,11 @@
 import bcrypt from 'bcryptjs';
 import { Prisma } from '@prisma/client';
+import { COOKIE_NAME, env } from '../config/env.js';
 import { prisma } from '../config/prisma.js';
+import { opcionesCookie } from '../middlewares/auth.js';
 import { AppError } from '../utils/AppError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { calcularHuella } from '../utils/huella.js';
 
 // Nunca se devuelve la contraseña (ni su hash)
 const SELECT_SEGURO = {
@@ -15,26 +18,38 @@ const SELECT_SEGURO = {
   _count: { select: { eventos: true } },
 };
 
-// Reglas 9 y 10: no se puede tocar a un administrador ni a uno mismo
-const obtenerCuentaGestionable = async (id, usuario) => {
-  const cuenta = await prisma.organizador.findUnique({
-    where: { id_organizador: id },
-    select: { id_organizador: true, administrador: true },
-  });
+// Regla 9:
+//  - Un administrador NUNCA puede ser deshabilitado ni eliminado.
+//  - Un administrador solo puede ser editado por sí mismo (no por otros, ni siquiera otros administradores).
+//  - Una cuenta no administradora no puede modificarse a sí misma desde la gestión de cuentas.
+const obtenerCuenta = async (id, usuario, accion) => {
+  const cuenta = await prisma.organizador.findUnique({ where: { id_organizador: id } });
   if (!cuenta) throw new AppError(404, 'La cuenta no existe');
-  if (cuenta.administrador) {
-    throw new AppError(403, 'No se puede deshabilitar, editar ni eliminar una cuenta de administrador');
+  const esPropia = cuenta.id_organizador === usuario.id_organizador;
+
+  if (accion === 'editar') {
+    if (cuenta.administrador && !esPropia) {
+      throw new AppError(403, 'No se puede editar la cuenta de otro administrador');
+    }
+    if (!cuenta.administrador && esPropia) {
+      throw new AppError(403, 'No puedes modificar tu propia cuenta desde la gestión de cuentas');
+    }
+  } else {
+    if (cuenta.administrador) {
+      throw new AppError(403, 'No se puede deshabilitar ni eliminar una cuenta de administrador');
+    }
+    if (esPropia) {
+      throw new AppError(403, 'No puedes modificar tu propia cuenta desde la gestión de cuentas');
+    }
   }
-  if (cuenta.id_organizador === usuario.id_organizador) {
-    throw new AppError(403, 'No puedes modificar tu propia cuenta desde la gestión de cuentas');
-  }
-  return cuenta;
+  return { cuenta, esPropia };
 };
 
 // Lista todas las cuentas excepto la propia.
-// Excepción (regla 9): si quien consulta es administrador, su cuenta sí aparece (solo lectura).
+// Excepción: si quien consulta es administrador, su cuenta sí aparece (y puede editarla).
 export const listar = asyncHandler(async (req, res) => {
-  const where = req.usuario.administrador ? {} : { id_organizador: { not: req.usuario.id_organizador } };
+  const yo = req.usuario.id_organizador;
+  const where = req.usuario.administrador ? {} : { id_organizador: { not: yo } };
   const cuentas = await prisma.organizador.findMany({
     where,
     select: SELECT_SEGURO,
@@ -44,7 +59,9 @@ export const listar = asyncHandler(async (req, res) => {
     cuentas: cuentas.map(({ _count, ...c }) => ({
       ...c,
       total_eventos: _count.eventos,
-      protegida: c.administrador, // el frontend puede ocultar editar/deshabilitar/eliminar
+      es_propia: c.id_organizador === yo,
+      puede_editar: !c.administrador || c.id_organizador === yo,
+      puede_gestionar: !c.administrador, // deshabilitar / eliminar
     })),
   });
 });
@@ -63,7 +80,7 @@ export const impactoEliminacion = asyncHandler(async (req, res) => {
 
 // Habilitar / deshabilitar. Al deshabilitar, la sesión se cierra sola (middleware autenticar)
 export const cambiarAprobacion = asyncHandler(async (req, res) => {
-  await obtenerCuentaGestionable(req.params.id, req.usuario);
+  await obtenerCuenta(req.params.id, req.usuario, 'gestionar');
   const cuenta = await prisma.organizador.update({
     where: { id_organizador: req.params.id },
     data: { aprobacion: req.body.aprobacion },
@@ -76,18 +93,25 @@ export const cambiarAprobacion = asyncHandler(async (req, res) => {
 });
 
 export const editar = asyncHandler(async (req, res) => {
-  await obtenerCuentaGestionable(req.params.id, req.usuario);
+  const { cuenta, esPropia } = await obtenerCuenta(req.params.id, req.usuario, 'editar');
   const { nombre, gmail, numero_tel, contrasena } = req.body;
   const data = { nombre, gmail, numero_tel };
   if (contrasena) data.contrasena = await bcrypt.hash(contrasena, 12);
 
   try {
-    const cuenta = await prisma.organizador.update({
+    const actualizada = await prisma.organizador.update({
       where: { id_organizador: req.params.id },
       data,
-      select: SELECT_SEGURO,
     });
-    res.json({ mensaje: 'Cuenta actualizada', cuenta });
+
+    // Si cambió algún dato de acceso, esa cuenta debe iniciar sesión de nuevo.
+    // (Las sesiones de OTRAS cuentas se cierran solas en su próxima petición, ver middleware autenticar.)
+    const cambioDatos = calcularHuella(cuenta) !== calcularHuella(actualizada);
+    const sesionCerrada = esPropia && cambioDatos;
+    if (sesionCerrada) res.clearCookie(COOKIE_NAME, opcionesCookie);
+
+    const { contrasena: _omitida, ...segura } = actualizada;
+    res.json({ mensaje: 'Cuenta actualizada', cuenta: segura, sesionCerrada });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
       throw new AppError(409, 'Ya existe otra cuenta con ese correo');
@@ -98,7 +122,7 @@ export const editar = asyncHandler(async (req, res) => {
 
 // Borrado en cascada: también elimina sus eventos y los boletos de esos eventos
 export const eliminar = asyncHandler(async (req, res) => {
-  await obtenerCuentaGestionable(req.params.id, req.usuario);
+  await obtenerCuenta(req.params.id, req.usuario, 'gestionar');
   const [eventos, boletos] = await Promise.all([
     prisma.evento.count({ where: { id_organizador: req.params.id } }),
     prisma.boleto.count({ where: { evento: { id_organizador: req.params.id } } }),
@@ -106,3 +130,8 @@ export const eliminar = asyncHandler(async (req, res) => {
   await prisma.organizador.delete({ where: { id_organizador: req.params.id } });
   res.json({ mensaje: 'Cuenta eliminada', eventosEliminados: eventos, boletosEliminados: boletos });
 });
+
+// Regla 2: solo un administrador (ver ruta) puede ver la clave de registro
+export const verClave = (req, res) => {
+  res.json({ clave: env.CLAVE_REGISTRO });
+};

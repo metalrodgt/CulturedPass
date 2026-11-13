@@ -15,3 +15,50 @@
   .modal { padding-top: 1rem; padding-bottom: 1rem; }
   .modal__logo { display: none; }
 }
+
+/* ===== v2 ===== */
+
+.boton--amarillo { background: #e0c93d; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35); }
+
+/* Barra de la sección Eventos: cantidad + filtro de disponibilidad */
+.barra-eventos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+  margin-bottom: 1rem;
+}
+.barra-eventos__conteo { font-weight: 700; font-size: 1.1rem; }
+.barra-eventos .menu-filtro { justify-self: auto; }
+.barra-eventos .menu-filtro__lista { left: auto; right: 0; transform: none; }
+
+/* Barra de la gestión de cuentas: buscador + filtro (dentro del contenedor vino) */
+.barra-cuentas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem 1rem;
+}
+.barra-cuentas .buscador { flex: 1 1 220px; max-width: 420px; }
+.barra-cuentas .menu-filtro { justify-self: auto; }
+.barra-cuentas .menu-filtro__lista { left: auto; right: 0; transform: none; }
+.mensaje--claro { color: #fff; }
+
+/* Fila de cuenta con columna ID (reemplaza al avatar) */
+.fila--cuenta {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: 'id nombre acciones' 'gmail gmail gmail' 'tel aprob aprob';
+}
+.fila--cuenta .dato--id { grid-area: id; min-width: 2.5rem; }
+@media (min-width: 900px) {
+  .fila--cuenta {
+    grid-template-columns: 0.5fr 1.2fr 2fr 1.1fr 1fr auto;
+    grid-template-areas: 'id nombre gmail tel aprob acciones';
+  }
+}
+
+/* Campo "fecha final" del formulario de eventos */
+.fecha-final { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
+.fecha-final .entrada { flex: 1 1 180px; }

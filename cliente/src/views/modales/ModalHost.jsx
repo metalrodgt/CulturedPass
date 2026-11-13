@@ -11,6 +11,7 @@ import EditarEvento from './EditarEvento.jsx';
 import EliminarEvento from './EliminarEvento.jsx';
 import EditarCuenta from './EditarCuenta.jsx';
 import EliminarCuenta from './EliminarCuenta.jsx';
+import ClaveRegistro from './ClaveRegistro.jsx';
 
 // Nombre usado en abrirModal('nombre', props) -> componente
 const MODALES = {
@@ -26,6 +27,7 @@ const MODALES = {
   'eliminar-evento': EliminarEvento,
   'editar-cuenta': EditarCuenta,
   'eliminar-cuenta': EliminarCuenta,
+  'clave-registro': ClaveRegistro,
 };
 
 export default function ModalHost() {

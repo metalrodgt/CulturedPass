@@ -12,6 +12,7 @@ const SELECT_PUBLICO = {
   nombre_encargado: true,
   numero_telefono: true,
   fecha_evento: true,
+  fecha_final: true,
   ubicacion: true,
   hora_inicio: true,
   hora_finalizacion: true,
@@ -75,6 +76,7 @@ const datosDeEvento = (d) => ({
   nombre_encargado: d.nombre_encargado,
   numero_telefono: d.numero_telefono,
   fecha_evento: aFechaDB(d.fecha_evento),
+  fecha_final: d.fecha_final ? aFechaDB(d.fecha_final) : null,
   ubicacion: d.ubicacion,
   hora_inicio: aHoraDB(d.hora_inicio),
   hora_finalizacion: aHoraDB(d.hora_finalizacion),
@@ -102,6 +104,7 @@ export const crear = asyncHandler(async (req, res) => {
 const CAMPOS_NOTIFICABLES = [
   ['nombre_evento', 'el nombre del evento'],
   ['fecha_evento', 'la fecha'],
+  ['fecha_final', 'la fecha final'],
   ['hora_inicio', 'la hora de inicio'],
   ['hora_finalizacion', 'la hora de finalización'],
   ['ubicacion', 'la ubicación'],
@@ -151,7 +154,7 @@ export const editar = asyncHandler(async (req, res) => {
 
     const nuevo = serializarEvento(actualizado);
     const cambios = CAMPOS_NOTIFICABLES.filter(([campo]) => anterior[campo] !== nuevo[campo]).map(
-      ([campo, etiqueta]) => ({ campo: etiqueta, anterior: anterior[campo], nuevo: nuevo[campo] }),
+      ([campo, etiqueta]) => ({ campo: etiqueta, anterior: anterior[campo] ?? 'ninguna', nuevo: nuevo[campo] ?? 'ninguna' }),
     );
 
     const destinatarios = cambios.length

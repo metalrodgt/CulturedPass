@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { Prisma } from '@prisma/client';
@@ -5,6 +6,7 @@ import { COOKIE_NAME, env } from '../config/env.js';
 import { prisma } from '../config/prisma.js';
 import { opcionesCookie } from '../middlewares/auth.js';
 import { AppError } from '../utils/AppError.js';
+import { calcularHuella } from '../utils/huella.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 const RONDAS_BCRYPT = 12;
@@ -12,6 +14,13 @@ const RONDAS_BCRYPT = 12;
 // Hash falso para comparar cuando el correo no existe: así el tiempo de respuesta
 // es parecido exista o no la cuenta (defensa contra ataques cronometrados).
 const HASH_FALSO = bcrypt.hashSync('contrasena-falsa-para-igualar-tiempos', RONDAS_BCRYPT);
+
+// Compara la clave ingresada con CLAVE_REGISTRO en tiempo constante
+const claveValida = (ingresada) => {
+  const a = createHash('sha256').update(String(ingresada)).digest();
+  const b = createHash('sha256').update(env.CLAVE_REGISTRO).digest();
+  return timingSafeEqual(a, b);
+};
 
 const datosPublicos = (o) => ({
   id_organizador: o.id_organizador,
@@ -22,7 +31,11 @@ const datosPublicos = (o) => ({
 
 // Regla 6: la cuenta se crea sin aprobar (aprobacion=false, administrador=false)
 export const registro = asyncHandler(async (req, res) => {
-  const { nombre, gmail, numero_tel, contrasena } = req.body;
+  const { nombre, gmail, numero_tel, contrasena, clave } = req.body;
+
+  // Regla 2: sin la clave correcta no se puede crear la cuenta
+  if (!claveValida(clave)) throw new AppError(403, 'La clave de registro es incorrecta');
+
   const hash = await bcrypt.hash(contrasena, RONDAS_BCRYPT);
   try {
     await prisma.organizador.create({
@@ -52,7 +65,7 @@ export const login = asyncHandler(async (req, res) => {
     throw new AppError(403, 'Tu cuenta aún no fue aprobada por un organizador');
   }
 
-  const token = jwt.sign({}, env.JWT_SECRET, {
+  const token = jwt.sign({ huella: calcularHuella(organizador) }, env.JWT_SECRET, {
     algorithm: 'HS256',
     subject: String(organizador.id_organizador),
     expiresIn: `${env.JWT_HORAS}h`,

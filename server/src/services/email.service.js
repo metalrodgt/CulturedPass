@@ -39,6 +39,9 @@ const fila = (etiqueta, valor) =>
 // Ticket simulado con los datos del evento y el código identificador único
 export const enviarBoletoPorCorreo = ({ evento, boleto }) => {
   const fecha = fechaLegible(evento.fecha_evento);
+  const horario = evento.fecha_final
+    ? `${evento.hora_inicio} hasta las ${evento.hora_finalizacion} del ${fechaLegible(evento.fecha_final)}`
+    : `${evento.hora_inicio} a ${evento.hora_finalizacion}`;
   const html = `
   <div style="font-family:Arial,sans-serif;max-width:520px;margin:auto">
     <h2>🎟️ Tu inscripción fue confirmada</h2>
@@ -46,14 +49,14 @@ export const enviarBoletoPorCorreo = ({ evento, boleto }) => {
     <table style="border-collapse:collapse;background:#f7f7f7;border-radius:8px">
       ${fila('Evento', evento.nombre_evento)}
       ${fila('Fecha', fecha)}
-      ${fila('Horario', `${evento.hora_inicio} a ${evento.hora_finalizacion}`)}
+      ${fila('Horario', horario)}
       ${fila('Lugar', evento.ubicacion)}
     </table>
     <p style="margin-top:20px">Tu código de boleto:</p>
     <p style="font-size:30px;letter-spacing:6px;font-weight:bold;background:#222;color:#fff;padding:12px;text-align:center;border-radius:8px">${h(boleto.codigo)}</p>
     <p>Preséntalo el día del evento. También lo necesitarás si quieres cancelar tu inscripción.</p>
   </div>`;
-  const texto = `Inscripción confirmada\nEvento: ${evento.nombre_evento}\nFecha: ${fecha}\nHorario: ${evento.hora_inicio} a ${evento.hora_finalizacion}\nLugar: ${evento.ubicacion}\nTu código: ${boleto.codigo}`;
+  const texto = `Inscripción confirmada\nEvento: ${evento.nombre_evento}\nFecha: ${fecha}\nHorario: ${horario}\nLugar: ${evento.ubicacion}\nTu código: ${boleto.codigo}`;
   return enviarSeguro({
     para: boleto.gmail,
     asunto: unaLinea(`Tu boleto para ${evento.nombre_evento}`),

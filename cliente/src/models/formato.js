@@ -47,3 +47,11 @@ export const copiarTexto = async (texto) => {
     }
   }
 };
+
+// '2026-11-17' -> '2026-11-18' (devuelve '' si la fecha no es válida)
+export const sumarDia = (iso) => {
+  const d = new Date(`${iso}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return '';
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
+};

@@ -5,7 +5,7 @@ import {
   validarTexto,
   validarUrl,
 } from '../../models/validaciones.js';
-import { hoyISO } from '../../models/formato.js';
+import { hoyISO, sumarDia } from '../../models/formato.js';
 import Campo from '../components/Campo.jsx';
 import ImagenPortada from '../components/ImagenPortada.jsx';
 
@@ -14,6 +14,7 @@ const VACIO = {
   nombre_encargado: '',
   numero_telefono: '',
   fecha_evento: '',
+  fecha_final: '',
   ubicacion: '',
   hora_inicio: '',
   hora_finalizacion: '',
@@ -34,6 +35,7 @@ export default function FormularioEvento({ evento, onEnviar, onCancelar, cargand
           nombre_encargado: evento.nombre_encargado,
           numero_telefono: evento.numero_telefono,
           fecha_evento: evento.fecha_evento,
+          fecha_final: evento.fecha_final ?? '',
           ubicacion: evento.ubicacion,
           hora_inicio: evento.hora_inicio,
           hora_finalizacion: evento.hora_finalizacion,
@@ -46,6 +48,16 @@ export default function FormularioEvento({ evento, onEnviar, onCancelar, cargand
   const [errores, setErrores] = useState({});
   const cambiar = (campo) => (e) => setValores((v) => ({ ...v, [campo]: e.target.value }));
 
+  // Si ya había fecha final y se cambia la fecha del evento, la fecha final se ajusta al día siguiente
+  const cambiarFecha = (e) => {
+    const fecha = e.target.value;
+    setValores((v) => ({
+      ...v,
+      fecha_evento: fecha,
+      fecha_final: v.fecha_final && fecha ? sumarDia(fecha) : '',
+    }));
+  };
+
   const validar = () => {
     const e = {
       nombre_evento: validarTexto(valores.nombre_evento, 'El nombre del evento', 150),
@@ -55,6 +67,7 @@ export default function FormularioEvento({ evento, onEnviar, onCancelar, cargand
       descripcion: validarTexto(valores.descripcion, 'La descripción', 5000),
       portada: validarUrl(valores.portada),
       fecha_evento: '',
+      fecha_final: '',
       hora_inicio: valores.hora_inicio ? '' : 'La hora de inicio es obligatoria',
       hora_finalizacion: valores.hora_finalizacion ? '' : 'La hora de finalización es obligatoria',
       cupo_total: '',
@@ -66,9 +79,13 @@ export default function FormularioEvento({ evento, onEnviar, onCancelar, cargand
       e.fecha_evento = 'La fecha no puede ser pasada';
     }
 
-    // Regla 11
-    if (!e.hora_inicio && !e.hora_finalizacion && valores.hora_finalizacion <= valores.hora_inicio) {
-      e.hora_finalizacion = 'La hora de finalización debe ser posterior a la de inicio';
+    // Regla 11: con fecha final la hora de fin puede ser menor a la de inicio (corresponde al día siguiente)
+    if (valores.fecha_final) {
+      if (!valores.fecha_evento || valores.fecha_final !== sumarDia(valores.fecha_evento)) {
+        e.fecha_final = 'La fecha final solo puede ser el día siguiente a la fecha del evento';
+      }
+    } else if (!e.hora_inicio && !e.hora_finalizacion && valores.hora_finalizacion <= valores.hora_inicio) {
+      e.hora_finalizacion = 'La hora de finalización debe ser posterior a la de inicio (o agrega una fecha final)';
     }
 
     // Regla 15
@@ -89,6 +106,7 @@ export default function FormularioEvento({ evento, onEnviar, onCancelar, cargand
       nombre_encargado: valores.nombre_encargado.trim(),
       numero_telefono: valores.numero_telefono.trim(),
       fecha_evento: valores.fecha_evento,
+      fecha_final: valores.fecha_final || null,
       ubicacion: valores.ubicacion.trim(),
       hora_inicio: valores.hora_inicio,
       hora_finalizacion: valores.hora_finalizacion,
@@ -112,7 +130,7 @@ export default function FormularioEvento({ evento, onEnviar, onCancelar, cargand
         <input id="ev-tel" type="tel" className="entrada" value={valores.numero_telefono} onChange={cambiar('numero_telefono')} maxLength={20} inputMode="tel" aria-invalid={inv('numero_telefono')} />
       </Campo>
       <Campo etiqueta="Fecha:" id="ev-fecha" error={errores.fecha_evento}>
-        <input id="ev-fecha" type="date" className="entrada" value={valores.fecha_evento} onChange={cambiar('fecha_evento')} min={editando ? undefined : hoyISO()} aria-invalid={inv('fecha_evento')} />
+        <input id="ev-fecha" type="date" className="entrada" value={valores.fecha_evento} onChange={cambiarFecha} min={editando ? undefined : hoyISO()} aria-invalid={inv('fecha_evento')} />
       </Campo>
       <Campo etiqueta="Ubicación:" id="ev-ubi" error={errores.ubicacion}>
         <input id="ev-ubi" className="entrada" value={valores.ubicacion} onChange={cambiar('ubicacion')} maxLength={200} aria-invalid={inv('ubicacion')} />
@@ -122,6 +140,31 @@ export default function FormularioEvento({ evento, onEnviar, onCancelar, cargand
       </Campo>
       <Campo etiqueta="Hora de finalización:" id="ev-hf" error={errores.hora_finalizacion}>
         <input id="ev-hf" type="time" className="entrada" value={valores.hora_finalizacion} onChange={cambiar('hora_finalizacion')} aria-invalid={inv('hora_finalizacion')} />
+      </Campo>
+      <Campo
+        etiqueta="Fecha final (opcional):"
+        id="ev-ff"
+        error={errores.fecha_final}
+        ayuda="Solo si el evento termina al día siguiente. Con fecha final, la hora de finalización puede ser menor a la de inicio."
+      >
+        <div className="fecha-final">
+          <input
+            id="ev-ff"
+            type="date"
+            className="entrada"
+            value={valores.fecha_final}
+            onChange={cambiar('fecha_final')}
+            disabled={!valores.fecha_evento}
+            min={valores.fecha_evento ? sumarDia(valores.fecha_evento) : undefined}
+            max={valores.fecha_evento ? sumarDia(valores.fecha_evento) : undefined}
+            aria-invalid={inv('fecha_final')}
+          />
+          {valores.fecha_final && (
+            <button type="button" className="boton boton--chico" onClick={() => setValores((v) => ({ ...v, fecha_final: '' }))}>
+              Quitar
+            </button>
+          )}
+        </div>
       </Campo>
       <Campo etiqueta="Descripción:" id="ev-desc" error={errores.descripcion}>
         <textarea id="ev-desc" className="entrada" rows={4} value={valores.descripcion} onChange={cambiar('descripcion')} maxLength={5000} aria-invalid={inv('descripcion')} />

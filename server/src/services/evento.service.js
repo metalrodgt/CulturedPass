@@ -8,7 +8,7 @@ export const finalizarEventosVencidos = async () => {
     UPDATE evento
        SET estado = 'Finalizado'::estado_evento
      WHERE estado = 'Disponible'::estado_evento
-       AND (fecha_evento + hora_finalizacion) < (now() AT TIME ZONE ${env.TIMEZONE}::text)`;
+       AND (COALESCE(fecha_final, fecha_evento) + hora_finalizacion) < (now() AT TIME ZONE ${env.TIMEZONE}::text)`;
 };
 
 export const programarFinalizacionAutomatica = () => {

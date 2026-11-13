@@ -46,6 +46,7 @@ model Evento {
   nombre_encargado  String
   numero_telefono   String
   fecha_evento      DateTime     @db.Date
+  fecha_final       DateTime?    @db.Date
   ubicacion         String
   hora_inicio       DateTime     @db.Time(6)
   hora_finalizacion DateTime     @db.Time(6)

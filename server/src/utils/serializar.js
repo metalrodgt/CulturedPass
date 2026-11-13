@@ -4,6 +4,7 @@ import { fechaATexto, horaATexto } from './fechas.js';
 export const serializarEvento = (e) => {
   const salida = { ...e };
   if (e.fecha_evento instanceof Date) salida.fecha_evento = fechaATexto(e.fecha_evento);
+  if (e.fecha_final instanceof Date) salida.fecha_final = fechaATexto(e.fecha_final);
   if (e.hora_inicio instanceof Date) salida.hora_inicio = horaATexto(e.hora_inicio);
   if (e.hora_finalizacion instanceof Date) salida.hora_finalizacion = horaATexto(e.hora_finalizacion);
   return salida;

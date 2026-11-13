@@ -21,6 +21,9 @@ if (JWT_SECRET.length < 32) {
   process.exit(1);
 }
 
+// Clave que se exige SOLO para crear cuentas de organizador (la ve únicamente el administrador)
+const CLAVE_REGISTRO = requerida('CLAVE_REGISTRO');
+
 export const COOKIE_NAME = 'cp_token';
 
 export const env = {
@@ -32,6 +35,8 @@ export const env = {
 
   JWT_SECRET,
   JWT_HORAS: numero('JWT_HORAS', 8),
+
+  CLAVE_REGISTRO,
 
   SMTP_HOST: process.env.SMTP_HOST ?? 'smtp.gmail.com',
   SMTP_PORT: numero('SMTP_PORT', 465),

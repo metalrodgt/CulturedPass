@@ -44,6 +44,9 @@ export default function DetalleEvento({ evento: inicial, onCerrar }) {
         <div><dt>Ubicación:</dt><dd>{evento.ubicacion}</dd></div>
         <div><dt>Fecha:</dt><dd>{fechaLegible(evento.fecha_evento)}</dd></div>
         <div><dt>Hora de inicio:</dt><dd>{evento.hora_inicio}</dd></div>
+        {evento.fecha_final && (
+          <div><dt>Fecha final:</dt><dd>{fechaLegible(evento.fecha_final)}</dd></div>
+        )}
         <div><dt>Hora de finalización:</dt><dd>{evento.hora_finalizacion}</dd></div>
         <div><dt>Cupo:</dt><dd>{evento.cupo_disponible}/{evento.cupo_total}</dd></div>
       </dl>

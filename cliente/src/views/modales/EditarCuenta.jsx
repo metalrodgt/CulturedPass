@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   hayErrores,
   validarContrasena,
@@ -6,6 +7,7 @@ import {
   validarTelefono,
   validarTexto,
 } from '../../models/validaciones.js';
+import { useAuth } from '../../controllers/AuthContext.jsx';
 import { useAccionesCuenta } from '../../controllers/useCuentas.js';
 import { useModal } from '../../controllers/ModalContext.jsx';
 import ModalBase from './ModalBase.jsx';
@@ -14,7 +16,9 @@ import Campo from '../components/Campo.jsx';
 import Icono from '../components/Icono.jsx';
 
 export default function EditarCuenta({ cuenta, onCerrar }) {
-  const { mostrarAviso, refrescarDatos } = useModal();
+  const navigate = useNavigate();
+  const { cerrarSesion } = useAuth();
+  const { mostrarAviso, refrescarDatos, abrirModal } = useModal();
   const { editar, aprobacion, cargando, error } = useAccionesCuenta();
   const [valores, setValores] = useState({
     nombre: cuenta.nombre,
@@ -25,6 +29,10 @@ export default function EditarCuenta({ cuenta, onCerrar }) {
   const [aprobada, setAprobada] = useState(cuenta.aprobacion);
   const [errores, setErrores] = useState({});
   const [ver, setVer] = useState(false);
+
+  // Un administrador puede editar su propia cuenta, pero no deshabilitarla
+  const esPropia = Boolean(cuenta.es_propia);
+  const puedeCambiarAprobacion = Boolean(cuenta.puede_gestionar);
 
   const cambiar = (campo) => (e) => setValores((v) => ({ ...v, [campo]: e.target.value }));
 
@@ -48,7 +56,17 @@ export default function EditarCuenta({ cuenta, onCerrar }) {
 
     const r = await editar(cuenta.id_organizador, datos);
     if (!r.ok) return;
-    if (aprobada !== cuenta.aprobacion) {
+
+    // Cambió sus propios datos de acceso: debe iniciar sesión de nuevo con los datos nuevos
+    if (r.datos.sesionCerrada) {
+      await cerrarSesion();
+      navigate('/');
+      mostrarAviso('Datos actualizados. Inicia sesión nuevamente con tus datos nuevos.');
+      abrirModal('login');
+      return;
+    }
+
+    if (puedeCambiarAprobacion && aprobada !== cuenta.aprobacion) {
       const r2 = await aprobacion(cuenta.id_organizador, aprobada);
       if (!r2.ok) return;
     }
@@ -81,17 +99,29 @@ export default function EditarCuenta({ cuenta, onCerrar }) {
             </button>
           </div>
         </Campo>
-        <Campo etiqueta="Aprobación:" id="cue-aprob" ayuda="Si la deshabilitas, su sesión se cerrará.">
-          <button
-            id="cue-aprob"
-            type="button"
-            className={`boton boton--chico ${aprobada ? 'boton--verde' : 'boton--rojo'}`}
-            onClick={() => setAprobada((a) => !a)}
-            aria-pressed={aprobada}
-          >
-            {aprobada ? 'True' : 'False'}
-          </button>
-        </Campo>
+
+        {puedeCambiarAprobacion && (
+          <Campo etiqueta="Aprobación:" id="cue-aprob" ayuda="Si la deshabilitas, su sesión se cerrará.">
+            <button
+              id="cue-aprob"
+              type="button"
+              className={`boton boton--chico ${aprobada ? 'boton--verde' : 'boton--rojo'}`}
+              onClick={() => setAprobada((a) => !a)}
+              aria-pressed={aprobada}
+            >
+              {aprobada ? 'True' : 'False'}
+            </button>
+          </Campo>
+        )}
+
+        <p className="modal__advertencia">
+          <Icono nombre="info" />
+          <span>
+            {esPropia
+              ? 'Si cambias tus datos o tu contraseña, se cerrará tu sesión y tendrás que iniciar sesión con los datos nuevos.'
+              : 'Si cambias los datos o la contraseña de esta cuenta, tendrá que iniciar sesión de nuevo.'}
+          </span>
+        </p>
 
         {error && <p className="modal__error" role="alert">{error}</p>}
 

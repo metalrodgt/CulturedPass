@@ -15,12 +15,14 @@ const MAX_REINTENTOS_CODIGO = 5;
 export const inscribir = async (idEvento, { nombre, gmail }) => {
   await finalizarEventosVencidos();
 
-  // Regla 23: un organizador no puede inscribirse
-  const esOrganizador = await prisma.organizador.findUnique({
-    where: { gmail },
-    select: { id_organizador: true },
+  // Regla 23: un organizador no puede inscribirse al evento que él mismo creó
+  const duenio = await prisma.evento.findUnique({
+    where: { id_evento: idEvento },
+    select: { organizador: { select: { gmail: true } } },
   });
-  if (esOrganizador) throw new AppError(403, 'Un organizador no puede inscribirse a un evento');
+  if (duenio && duenio.organizador.gmail === gmail) {
+    throw new AppError(403, 'No puedes inscribirte a un evento que tú mismo creaste');
+  }
 
   for (let intento = 0; intento < MAX_REINTENTOS_CODIGO; intento += 1) {
     const codigo = generarCodigo();
@@ -61,6 +63,7 @@ export const inscribir = async (idEvento, { nombre, gmail }) => {
             id_evento: true,
             nombre_evento: true,
             fecha_evento: true,
+            fecha_final: true,
             hora_inicio: true,
             hora_finalizacion: true,
             ubicacion: true,

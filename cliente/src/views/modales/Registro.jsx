@@ -17,9 +17,10 @@ import Icono from '../components/Icono.jsx';
 export default function Registro({ onCerrar }) {
   const { mostrarAviso } = useModal();
   const { ejecutar, cargando, error } = useAccion();
-  const [valores, setValores] = useState({ nombre: '', gmail: '', numero_tel: '', contrasena: '' });
+  const [valores, setValores] = useState({ nombre: '', gmail: '', numero_tel: '', contrasena: '', clave: '' });
   const [errores, setErrores] = useState({});
   const [ver, setVer] = useState(false);
+  const [verClave, setVerClave] = useState(false);
 
   const cambiar = (campo) => (e) => setValores((v) => ({ ...v, [campo]: e.target.value }));
 
@@ -30,6 +31,7 @@ export default function Registro({ onCerrar }) {
       gmail: validarGmail(valores.gmail),
       numero_tel: validarTelefono(valores.numero_tel),
       contrasena: validarContrasena(valores.contrasena),
+      clave: valores.clave.trim() ? '' : 'La clave es obligatoria',
     };
     setErrores(nuevos);
     if (hayErrores(nuevos)) return;
@@ -40,6 +42,7 @@ export default function Registro({ onCerrar }) {
         gmail: valores.gmail.trim(),
         numero_tel: valores.numero_tel.trim(),
         contrasena: valores.contrasena,
+        clave: valores.clave.trim(),
       }),
     );
     if (r.ok) {
@@ -69,6 +72,16 @@ export default function Registro({ onCerrar }) {
             <input id="reg-pass" type={ver ? 'text' : 'password'} className="entrada" value={valores.contrasena} onChange={cambiar('contrasena')} maxLength={72} autoComplete="new-password" aria-invalid={Boolean(errores.contrasena)} />
             <button type="button" className="entrada-con-icono__boton" onClick={() => setVer((v) => !v)} aria-label={ver ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
               <Icono nombre={ver ? 'visibility_off' : 'visibility'} />
+            </button>
+          </div>
+        </Campo>
+
+        {/* Regla 2: la clave solo se pide para crear la cuenta; la conocen únicamente los empleados */}
+        <Campo etiqueta="Clave:" id="reg-clave" error={errores.clave} ayuda="Solo la conocen los empleados.">
+          <div className="entrada-con-icono">
+            <input id="reg-clave" type={verClave ? 'text' : 'password'} className="entrada" value={valores.clave} onChange={cambiar('clave')} maxLength={100} autoComplete="off" aria-invalid={Boolean(errores.clave)} />
+            <button type="button" className="entrada-con-icono__boton" onClick={() => setVerClave((v) => !v)} aria-label={verClave ? 'Ocultar clave' : 'Mostrar clave'}>
+              <Icono nombre={verClave ? 'visibility_off' : 'visibility'} />
             </button>
           </div>
         </Campo>
