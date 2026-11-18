@@ -25,6 +25,11 @@ const telefono = z
   .trim()
   .regex(/^[0-9+() -]{6,20}$/, 'El teléfono no es válido (6 a 20 caracteres: números, + ( ) -)');
 
+const dni = z
+  .string({ required_error: 'El DNI es obligatorio' })
+  .trim()
+  .regex(/^[0-9]{7,8}$/, 'El DNI debe tener 7 u 8 números, sin puntos');
+
 const contrasena = z
   .string({ required_error: 'La contraseña es obligatoria' })
   .min(8, 'La contraseña debe tener al menos 8 caracteres')
@@ -53,6 +58,7 @@ const portada = z
 export const registroSchema = z.object({
   nombre: texto('El nombre', 100),
   gmail,
+  dni,
   numero_tel: telefono,
   contrasena,
   clave: z
@@ -137,6 +143,7 @@ export const filtroBoletosSchema = z.object({
 export const editarOrganizadorSchema = z.object({
   nombre: texto('El nombre', 100),
   gmail,
+  dni,
   numero_tel: telefono,
   // Opcional: si viene vacío o ausente, no se cambia la contraseña
   contrasena: contrasena.optional().or(z.literal('')),
@@ -149,3 +156,24 @@ export const aprobacionSchema = z.object({
 export const idSchema = z.object({
   id: z.coerce.number().int().positive('Id inválido'),
 });
+
+// Se usa para editar cuentas de organizador y de visitante
+export const editarCuentaSchema = editarOrganizadorSchema;
+
+// ----- Claves de registro (las edita el administrador) -----
+const claveRegistro = z
+  .string({ required_error: 'La clave es obligatoria' })
+  .trim()
+  .min(6, 'La clave debe tener al menos 6 caracteres')
+  .max(100, 'La clave no puede superar los 100 caracteres')
+  .regex(/^[^<>\s]+$/, 'La clave no puede tener espacios ni los caracteres < >');
+
+export const clavesSchema = z
+  .object({
+    clave_organizador: claveRegistro,
+    clave_visitante: claveRegistro,
+  })
+  .refine((d) => d.clave_organizador !== d.clave_visitante, {
+    message: 'Las claves de organizador y de visitante deben ser diferentes',
+    path: ['clave_visitante'],
+  });

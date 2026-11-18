@@ -15,6 +15,8 @@ export default function Navbar() {
   const [abierto, setAbierto] = useState(false);
   const [busqueda, setBusqueda] = useState('');
 
+  const esOrganizador = usuario?.rol === 'organizador';
+
   // El menú del celular se cierra al cambiar de pantalla
   useEffect(() => {
     setAbierto(false);
@@ -78,25 +80,23 @@ export default function Navbar() {
             Eventos
           </NavLink>
 
-          {/* Regla 23: los organizadores también pueden inscribirse, por eso también ven "Cancelar inscripción" */}
+          {/* Visitantes y organizadores pueden inscribirse, por eso ambos ven "Cancelar inscripción" */}
           <button type="button" className="navbar__enlace" onClick={abrir('cancelar')}>
             Cancelar inscripción
           </button>
 
           {!usuario && (
-            <>
-              <div className="navbar__sesion">
-                <button type="button" className="navbar__enlace" onClick={abrir('login')}>
-                  Login
-                </button>
-                <button type="button" className="navbar__enlace" onClick={abrir('registro')}>
-                  Registrarse
-                </button>
-              </div>
-            </>
+            <div className="navbar__sesion">
+              <button type="button" className="navbar__enlace" onClick={abrir('login')}>
+                Login
+              </button>
+              <button type="button" className="navbar__enlace" onClick={abrir('registro')}>
+                Registrarse
+              </button>
+            </div>
           )}
 
-          {usuario && (
+          {esOrganizador && (
             <>
               <button type="button" className="navbar__enlace" onClick={abrir('crear-evento')}>
                 Crear
@@ -112,16 +112,19 @@ export default function Navbar() {
                   Clave
                 </button>
               )}
-              <div className="navbar__sesion">
-                <button type="button" className="navbar__enlace navbar__enlace--chico" onClick={salir}>
-                  Cerrar sesión
-                </button>
-                <span className="navbar__usuario" title={usuario.gmail}>
-                  <Icono nombre="account_circle" className="navbar__avatar" />
-                  <span className="navbar__usuario-nombre">{usuario.nombre}</span>
-                </span>
-              </div>
             </>
+          )}
+
+          {usuario && (
+            <div className="navbar__sesion">
+              <button type="button" className="navbar__enlace navbar__enlace--chico" onClick={salir}>
+                Cerrar sesión
+              </button>
+              <span className="navbar__usuario" title={usuario.gmail}>
+                <Icono nombre="account_circle" className="navbar__avatar" />
+                <span className="navbar__usuario-nombre">{usuario.nombre}</span>
+              </span>
+            </div>
           )}
         </nav>
       </div>

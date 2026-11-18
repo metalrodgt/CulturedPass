@@ -9,6 +9,7 @@ import { registroSchema } from '../src/validators/schemas.js';
 const entrada = registroSchema.omit({ clave: true }).safeParse({
   nombre: process.env.ADMIN_NOMBRE,
   gmail: process.env.ADMIN_GMAIL,
+  dni: process.env.ADMIN_DNI,
   numero_tel: process.env.ADMIN_TEL,
   contrasena: process.env.ADMIN_PASSWORD,
 });
@@ -19,13 +20,13 @@ if (!entrada.success) {
   process.exit(1);
 }
 
-const { nombre, gmail, numero_tel, contrasena } = entrada.data;
+const { nombre, gmail, dni, numero_tel, contrasena } = entrada.data;
 const hash = await bcrypt.hash(contrasena, 12);
 
 await prisma.organizador.upsert({
   where: { gmail },
-  update: { nombre, numero_tel, contrasena: hash, aprobacion: true, administrador: true },
-  create: { nombre, gmail, numero_tel, contrasena: hash, aprobacion: true, administrador: true },
+  update: { nombre, dni, numero_tel, contrasena: hash, aprobacion: true, administrador: true },
+  create: { nombre, gmail, dni, numero_tel, contrasena: hash, aprobacion: true, administrador: true },
 });
 
 console.log(`✅ Administrador listo: ${gmail}`);

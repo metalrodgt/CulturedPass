@@ -13,6 +13,7 @@ export default function RutaProtegida({ children }) {
   }, [cargando, usuario, abrirModal]);
 
   if (cargando) return <p className="cargando">Cargando…</p>;
-  if (!usuario) return <Navigate to="/" replace />;
+  // Los visitantes no tienen acceso a la gestión
+  if (!usuario || usuario.rol !== 'organizador') return <Navigate to="/" replace />;
   return children;
 }

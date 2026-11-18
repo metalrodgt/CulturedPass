@@ -25,6 +25,13 @@ export const validarTelefono = (valor) => {
   return '';
 };
 
+export const validarDni = (valor) => {
+  const t = (valor ?? '').trim();
+  if (!t) return 'El DNI es obligatorio';
+  if (!/^[0-9]{7,8}$/.test(t)) return 'El DNI debe tener 7 u 8 números, sin puntos';
+  return '';
+};
+
 export const validarContrasena = (valor, { obligatoria = true } = {}) => {
   if (!valor) return obligatoria ? 'La contraseña es obligatoria' : '';
   if (valor.length < 8) return 'La contraseña debe tener al menos 8 caracteres';

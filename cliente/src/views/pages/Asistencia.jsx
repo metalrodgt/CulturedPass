@@ -36,7 +36,7 @@ export default function Asistencia() {
       <div className="barra-asistencia">
         <div className="barra-asistencia__busqueda">
           <label htmlFor="buscar-boleto" className="barra-asistencia__etiqueta">
-            Buscar por código, fecha o nombre
+            Buscar por código, DNI, fecha o nombre
           </label>
           <div className="buscador buscador--claro">
             <Icono nombre="search" />
@@ -112,6 +112,10 @@ export default function Asistencia() {
               <div className="dato">
                 <span className="dato__titulo">Nombre</span>
                 <span className="dato__valor">{b.nombre}</span>
+              </div>
+              <div className="dato">
+                <span className="dato__titulo">DNI</span>
+                <span className="dato__valor">{b.dni ?? '—'}</span>
               </div>
               <div className="dato dato--ancho">
                 <span className="dato__titulo">Gmail</span>

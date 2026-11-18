@@ -3,6 +3,7 @@ import { authApi } from '../../models/api/authApi.js';
 import {
   hayErrores,
   validarContrasena,
+  validarDni,
   validarGmail,
   validarTelefono,
   validarTexto,
@@ -14,10 +15,13 @@ import BotonCerrar from '../components/BotonCerrar.jsx';
 import Campo from '../components/Campo.jsx';
 import Icono from '../components/Icono.jsx';
 
+// Crear cuenta. La CLAVE decide el tipo de cuenta:
+//  - clave de organizador -> cuenta de organizador
+//  - clave de visitante   -> cuenta de visitante
 export default function Registro({ onCerrar }) {
   const { mostrarAviso } = useModal();
   const { ejecutar, cargando, error } = useAccion();
-  const [valores, setValores] = useState({ nombre: '', gmail: '', numero_tel: '', contrasena: '', clave: '' });
+  const [valores, setValores] = useState({ nombre: '', gmail: '', dni: '', numero_tel: '', contrasena: '', clave: '' });
   const [errores, setErrores] = useState({});
   const [ver, setVer] = useState(false);
   const [verClave, setVerClave] = useState(false);
@@ -29,6 +33,7 @@ export default function Registro({ onCerrar }) {
     const nuevos = {
       nombre: validarTexto(valores.nombre, 'El nombre', 100),
       gmail: validarGmail(valores.gmail),
+      dni: validarDni(valores.dni),
       numero_tel: validarTelefono(valores.numero_tel),
       contrasena: validarContrasena(valores.contrasena),
       clave: valores.clave.trim() ? '' : 'La clave es obligatoria',
@@ -40,6 +45,7 @@ export default function Registro({ onCerrar }) {
       authApi.registro({
         nombre: valores.nombre.trim(),
         gmail: valores.gmail.trim(),
+        dni: valores.dni.trim(),
         numero_tel: valores.numero_tel.trim(),
         contrasena: valores.contrasena,
         clave: valores.clave.trim(),
@@ -47,7 +53,7 @@ export default function Registro({ onCerrar }) {
     );
     if (r.ok) {
       onCerrar();
-      mostrarAviso('Usuario creado correctamente. Un organizador debe aprobar tu cuenta antes de que puedas iniciar sesión.');
+      mostrarAviso(`Usuario creado correctamente. ${r.datos.mensaje}`);
     }
   };
 
@@ -64,6 +70,9 @@ export default function Registro({ onCerrar }) {
         <Campo etiqueta="Gmail:" id="reg-gmail" error={errores.gmail}>
           <input id="reg-gmail" type="email" className="entrada" value={valores.gmail} onChange={cambiar('gmail')} maxLength={254} autoComplete="email" inputMode="email" aria-invalid={Boolean(errores.gmail)} />
         </Campo>
+        <Campo etiqueta="DNI:" id="reg-dni" error={errores.dni} ayuda="7 u 8 números, sin puntos.">
+          <input id="reg-dni" className="entrada" value={valores.dni} onChange={cambiar('dni')} maxLength={8} inputMode="numeric" autoComplete="off" aria-invalid={Boolean(errores.dni)} />
+        </Campo>
         <Campo etiqueta="Número de teléfono:" id="reg-tel" error={errores.numero_tel}>
           <input id="reg-tel" type="tel" className="entrada" value={valores.numero_tel} onChange={cambiar('numero_tel')} maxLength={20} autoComplete="tel" inputMode="tel" aria-invalid={Boolean(errores.numero_tel)} />
         </Campo>
@@ -75,9 +84,7 @@ export default function Registro({ onCerrar }) {
             </button>
           </div>
         </Campo>
-
-        {/* Regla 2: la clave solo se pide para crear la cuenta; la conocen únicamente los empleados */}
-        <Campo etiqueta="Clave:" id="reg-clave" error={errores.clave} ayuda="Solo la conocen los empleados.">
+        <Campo etiqueta="Clave:" id="reg-clave" error={errores.clave} ayuda="Te la entrega el personal de CulturedPass.">
           <div className="entrada-con-icono">
             <input id="reg-clave" type={verClave ? 'text' : 'password'} className="entrada" value={valores.clave} onChange={cambiar('clave')} maxLength={100} autoComplete="off" aria-invalid={Boolean(errores.clave)} />
             <button type="button" className="entrada-con-icono__boton" onClick={() => setVerClave((v) => !v)} aria-label={verClave ? 'Ocultar clave' : 'Mostrar clave'}>

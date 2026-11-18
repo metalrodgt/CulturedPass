@@ -3,26 +3,31 @@ import { useNavigate } from 'react-router-dom';
 import {
   hayErrores,
   validarContrasena,
+  validarDni,
   validarGmail,
   validarTelefono,
   validarTexto,
 } from '../../models/validaciones.js';
 import { useAuth } from '../../controllers/AuthContext.jsx';
-import { useAccionesCuenta } from '../../controllers/useCuentas.js';
+import { idDeCuenta, useAccionesCuenta } from '../../controllers/useCuentas.js';
 import { useModal } from '../../controllers/ModalContext.jsx';
 import ModalBase from './ModalBase.jsx';
 import BotonCerrar from '../components/BotonCerrar.jsx';
 import Campo from '../components/Campo.jsx';
 import Icono from '../components/Icono.jsx';
 
-export default function EditarCuenta({ cuenta, onCerrar }) {
+// tipo: 'organizador' | 'visitante'
+export default function EditarCuenta({ cuenta, tipo = 'organizador', onCerrar }) {
   const navigate = useNavigate();
   const { cerrarSesion } = useAuth();
   const { mostrarAviso, refrescarDatos, abrirModal } = useModal();
-  const { editar, aprobacion, cargando, error } = useAccionesCuenta();
+  const { editar, aprobacion, cargando, error } = useAccionesCuenta(tipo);
+  const id = idDeCuenta(cuenta);
+
   const [valores, setValores] = useState({
     nombre: cuenta.nombre,
     gmail: cuenta.gmail,
+    dni: cuenta.dni ?? '',
     numero_tel: cuenta.numero_tel,
     contrasena: '',
   });
@@ -30,9 +35,9 @@ export default function EditarCuenta({ cuenta, onCerrar }) {
   const [errores, setErrores] = useState({});
   const [ver, setVer] = useState(false);
 
-  // Un administrador puede editar su propia cuenta, pero no deshabilitarla
   const esPropia = Boolean(cuenta.es_propia);
-  const puedeCambiarAprobacion = Boolean(cuenta.puede_gestionar);
+  // Visitantes: cualquier organizador. Organizadores: el servidor indica si se puede (regla 9).
+  const puedeCambiarAprobacion = tipo === 'visitante' ? true : Boolean(cuenta.puede_gestionar);
 
   const cambiar = (campo) => (e) => setValores((v) => ({ ...v, [campo]: e.target.value }));
 
@@ -41,6 +46,7 @@ export default function EditarCuenta({ cuenta, onCerrar }) {
     const nuevos = {
       nombre: validarTexto(valores.nombre, 'El nombre', 100),
       gmail: validarGmail(valores.gmail),
+      dni: validarDni(valores.dni),
       numero_tel: validarTelefono(valores.numero_tel),
       contrasena: validarContrasena(valores.contrasena, { obligatoria: false }),
     };
@@ -50,11 +56,12 @@ export default function EditarCuenta({ cuenta, onCerrar }) {
     const datos = {
       nombre: valores.nombre.trim(),
       gmail: valores.gmail.trim(),
+      dni: valores.dni.trim(),
       numero_tel: valores.numero_tel.trim(),
     };
     if (valores.contrasena) datos.contrasena = valores.contrasena;
 
-    const r = await editar(cuenta.id_organizador, datos);
+    const r = await editar(id, datos);
     if (!r.ok) return;
 
     // Cambió sus propios datos de acceso: debe iniciar sesión de nuevo con los datos nuevos
@@ -67,7 +74,7 @@ export default function EditarCuenta({ cuenta, onCerrar }) {
     }
 
     if (puedeCambiarAprobacion && aprobada !== cuenta.aprobacion) {
-      const r2 = await aprobacion(cuenta.id_organizador, aprobada);
+      const r2 = await aprobacion(id, aprobada);
       if (!r2.ok) return;
     }
     refrescarDatos();
@@ -87,6 +94,9 @@ export default function EditarCuenta({ cuenta, onCerrar }) {
         </Campo>
         <Campo etiqueta="Gmail:" id="cue-gmail" error={errores.gmail}>
           <input id="cue-gmail" type="email" className="entrada" value={valores.gmail} onChange={cambiar('gmail')} maxLength={254} inputMode="email" aria-invalid={Boolean(errores.gmail)} />
+        </Campo>
+        <Campo etiqueta="DNI:" id="cue-dni" error={errores.dni} ayuda="7 u 8 números, sin puntos.">
+          <input id="cue-dni" className="entrada" value={valores.dni} onChange={cambiar('dni')} maxLength={8} inputMode="numeric" aria-invalid={Boolean(errores.dni)} />
         </Campo>
         <Campo etiqueta="Número de teléfono:" id="cue-tel" error={errores.numero_tel}>
           <input id="cue-tel" type="tel" className="entrada" value={valores.numero_tel} onChange={cambiar('numero_tel')} maxLength={20} inputMode="tel" aria-invalid={Boolean(errores.numero_tel)} />
@@ -119,7 +129,7 @@ export default function EditarCuenta({ cuenta, onCerrar }) {
           <span>
             {esPropia
               ? 'Si cambias tus datos o tu contraseña, se cerrará tu sesión y tendrás que iniciar sesión con los datos nuevos.'
-              : 'Si cambias los datos o la contraseña de esta cuenta, tendrá que iniciar sesión de nuevo.'}
+              : 'Si cambias los datos o la contraseña de esta cuenta, tendrá que iniciar sesión de nuevo y se le enviará un correo con los datos actualizados (la contraseña nunca se envía por correo).'}
           </span>
         </p>
 

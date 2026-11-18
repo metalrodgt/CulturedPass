@@ -2,8 +2,9 @@ import { peticion } from './cliente.js';
 
 export const organizadoresApi = {
   listar: () => peticion('/gestion/organizadores'),
-  // Solo responde si quien consulta es administrador
-  clave: () => peticion('/gestion/clave'),
+  // Claves de registro: solo responden si quien consulta es administrador
+  claves: () => peticion('/gestion/claves'),
+  guardarClaves: (datos) => peticion('/gestion/claves', { metodo: 'PUT', cuerpo: datos }),
   impacto: (id) => peticion(`/gestion/organizadores/${id}/impacto`),
   editar: (id, datos) => peticion(`/gestion/organizadores/${id}`, { metodo: 'PUT', cuerpo: datos }),
   aprobacion: (id, aprobacion) =>

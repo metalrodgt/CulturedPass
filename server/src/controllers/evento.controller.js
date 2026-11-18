@@ -102,14 +102,11 @@ export const crear = asyncHandler(async (req, res) => {
 });
 
 const CAMPOS_NOTIFICABLES = [
-  ['nombre_evento', 'el nombre del evento'],
   ['fecha_evento', 'la fecha'],
   ['fecha_final', 'la fecha final'],
   ['hora_inicio', 'la hora de inicio'],
   ['hora_finalizacion', 'la hora de finalización'],
   ['ubicacion', 'la ubicación'],
-  ['nombre_encargado', 'el encargado'],
-  ['numero_telefono', 'el teléfono del encargado'],
 ];
 
 export const editar = asyncHandler(async (req, res) => {

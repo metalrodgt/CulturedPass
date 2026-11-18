@@ -9,7 +9,7 @@ import BotonCerrar from '../components/BotonCerrar.jsx';
 import Campo from '../components/Campo.jsx';
 import Icono from '../components/Icono.jsx';
 
-export default function Login({ onCerrar }) {
+export default function Login({ onCerrar, mensaje }) {
   const { iniciarSesion } = useAuth();
   const { abrirModal, mostrarAviso } = useModal();
   const navigate = useNavigate();
@@ -33,10 +33,11 @@ export default function Login({ onCerrar }) {
     if (r.ok) {
       onCerrar();
       mostrarAviso('Sesión iniciada correctamente');
-      navigate('/gestion/eventos');
+      // Los organizadores van a su panel; los visitantes se quedan donde estaban
+      if (r.datos.rol === 'organizador') navigate('/gestion/eventos');
     } else if (r.error.status === 403) {
-      // Credenciales correctas pero cuenta sin aprobar (regla 6)
-      abrirModal('cuenta-no-aprobada');
+      // Credenciales correctas pero la cuenta todavía no fue autorizada
+      abrirModal('cuenta-no-aprobada', { rol: r.error.datos?.rol });
     }
   };
 
@@ -44,7 +45,8 @@ export default function Login({ onCerrar }) {
     <ModalBase onCerrar={onCerrar} etiqueta="Iniciar sesión">
       <BotonCerrar onClick={onCerrar} />
       <h2 className="modal__titulo">Iniciar sesión</h2>
-      <p className="modal__subtitulo modal__subtitulo--linea">Solo para organizadores</p>
+      <p className="modal__subtitulo modal__subtitulo--linea">Organizadores y visitantes</p>
+      {mensaje && <p className="modal__texto">{mensaje}</p>}
 
       <form onSubmit={enviar} noValidate>
         <Campo etiqueta="Gmail:" id="log-gmail" error={errores.gmail}>

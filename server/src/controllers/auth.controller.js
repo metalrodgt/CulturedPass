@@ -1,4 +1,3 @@
-import { createHash, timingSafeEqual } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { Prisma } from '@prisma/client';
@@ -6,8 +5,10 @@ import { COOKIE_NAME, env } from '../config/env.js';
 import { prisma } from '../config/prisma.js';
 import { opcionesCookie } from '../middlewares/auth.js';
 import { AppError } from '../utils/AppError.js';
-import { calcularHuella } from '../utils/huella.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { aUsuario, buscarPorGmail, idDe, verificarDisponibilidad } from '../utils/cuentas.js';
+import { calcularHuella } from '../utils/huella.js';
+import { rolPorClave } from '../services/claves.service.js';
 
 const RONDAS_BCRYPT = 12;
 
@@ -15,64 +16,67 @@ const RONDAS_BCRYPT = 12;
 // es parecido exista o no la cuenta (defensa contra ataques cronometrados).
 const HASH_FALSO = bcrypt.hashSync('contrasena-falsa-para-igualar-tiempos', RONDAS_BCRYPT);
 
-// Compara la clave ingresada con CLAVE_REGISTRO en tiempo constante
-const claveValida = (ingresada) => {
-  const a = createHash('sha256').update(String(ingresada)).digest();
-  const b = createHash('sha256').update(env.CLAVE_REGISTRO).digest();
-  return timingSafeEqual(a, b);
-};
-
-const datosPublicos = (o) => ({
-  id_organizador: o.id_organizador,
-  nombre: o.nombre,
-  gmail: o.gmail,
-  administrador: o.administrador,
-});
-
-// Regla 6: la cuenta se crea sin aprobar (aprobacion=false, administrador=false)
+// Regla 2: la clave ingresada decide el tipo de cuenta que se crea
+//  - clave de organizador -> cuenta de organizador (la autoriza un administrador)
+//  - clave de visitante   -> cuenta de visitante (la autoriza un organizador)
+// Regla 17: nombre, gmail, DNI, teléfono y contraseña son obligatorios (lo valida schemas.js).
 export const registro = asyncHandler(async (req, res) => {
-  const { nombre, gmail, numero_tel, contrasena, clave } = req.body;
+  const { nombre, gmail, dni, numero_tel, contrasena, clave } = req.body;
 
-  // Regla 2: sin la clave correcta no se puede crear la cuenta
-  if (!claveValida(clave)) throw new AppError(403, 'La clave de registro es incorrecta');
+  const rol = await rolPorClave(clave);
+  if (!rol) throw new AppError(403, 'La clave de registro es incorrecta');
 
+  await verificarDisponibilidad({ gmail, dni });
   const hash = await bcrypt.hash(contrasena, RONDAS_BCRYPT);
+
   try {
-    await prisma.organizador.create({
-      data: { nombre, gmail, numero_tel, contrasena: hash, aprobacion: false, administrador: false },
-    });
+    if (rol === 'organizador') {
+      await prisma.organizador.create({
+        data: { nombre, gmail, dni, numero_tel, contrasena: hash, aprobacion: false, administrador: false },
+      });
+    } else {
+      await prisma.visitante.create({
+        data: { nombre, gmail, dni, numero_tel, contrasena: hash, aprobacion: false },
+      });
+    }
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-      throw new AppError(409, 'Ya existe una cuenta con ese correo');
+      throw new AppError(409, 'Ya existe una cuenta con ese correo o ese DNI');
     }
     throw err;
   }
+
   res.status(201).json({
-    mensaje: 'Cuenta creada. Un organizador debe aprobarla antes de que puedas iniciar sesión.',
+    rol,
+    mensaje:
+      rol === 'organizador'
+        ? 'Cuenta de organizador creada. Un administrador debe autorizarla antes de que puedas iniciar sesión.'
+        : 'Cuenta de visitante creada. Un organizador debe autorizarla antes de que puedas iniciar sesión.',
   });
 });
 
 export const login = asyncHandler(async (req, res) => {
   const { gmail, contrasena } = req.body;
-  const organizador = await prisma.organizador.findUnique({ where: { gmail } });
+  const encontrado = await buscarPorGmail(gmail);
 
-  const coincide = await bcrypt.compare(contrasena, organizador?.contrasena ?? HASH_FALSO);
-  if (!organizador || !coincide) throw new AppError(401, 'Correo o contraseña incorrectos');
+  const coincide = await bcrypt.compare(contrasena, encontrado?.cuenta.contrasena ?? HASH_FALSO);
+  if (!encontrado || !coincide) throw new AppError(401, 'Correo o contraseña incorrectos');
 
-  // Regla 6: sin aprobación no se puede iniciar sesión
-  // (se revisa DESPUÉS de validar la contraseña para no revelar qué correos existen)
-  if (!organizador.aprobacion) {
-    throw new AppError(403, 'Tu cuenta aún no fue aprobada por un organizador');
+  // Sin autorización no se puede iniciar sesión.
+  // (Se revisa DESPUÉS de validar la contraseña para no revelar qué correos existen.)
+  if (!encontrado.cuenta.aprobacion) {
+    throw new AppError(403, 'Tu cuenta aún no fue autorizada', { rol: encontrado.rol });
   }
 
-  const token = jwt.sign({ huella: calcularHuella(organizador) }, env.JWT_SECRET, {
+  const usuario = aUsuario(encontrado.rol, encontrado.cuenta);
+  const token = jwt.sign({ rol: usuario.rol, huella: calcularHuella(encontrado.cuenta) }, env.JWT_SECRET, {
     algorithm: 'HS256',
-    subject: String(organizador.id_organizador),
+    subject: String(idDe(usuario)),
     expiresIn: `${env.JWT_HORAS}h`,
   });
 
   res.cookie(COOKIE_NAME, token, { ...opcionesCookie, maxAge: env.JWT_HORAS * 60 * 60 * 1000 });
-  res.json({ mensaje: 'Sesión iniciada', usuario: datosPublicos(organizador) });
+  res.json({ mensaje: 'Sesión iniciada', usuario });
 });
 
 export const logout = (req, res) => {
@@ -82,5 +86,5 @@ export const logout = (req, res) => {
 
 // Sirve para que el frontend sepa si hay sesión activa al cargar la página
 export const me = (req, res) => {
-  res.json({ usuario: datosPublicos(req.usuario) });
+  res.json({ usuario: req.usuario });
 };

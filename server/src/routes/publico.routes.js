@@ -1,7 +1,8 @@
 import { Router } from 'express';
+import { autenticarCuenta } from '../middlewares/auth.js';
 import { limiteInscripcion } from '../middlewares/limitadores.js';
 import { validar } from '../middlewares/validar.js';
-import { cancelacionSchema, idSchema, inscripcionSchema } from '../validators/schemas.js';
+import { cancelacionSchema, idSchema } from '../validators/schemas.js';
 import * as eventos from '../controllers/evento.controller.js';
 import * as boletos from '../controllers/boleto.controller.js';
 
@@ -15,8 +16,8 @@ router.get('/eventos/:id', validar(idSchema, 'params'), eventos.obtenerPublico);
 router.post(
   '/eventos/:id/inscripciones',
   limiteInscripcion,
+  autenticarCuenta, // Regla 2: para inscribirse hace falta una cuenta (organizador o visitante)
   validar(idSchema, 'params'),
-  validar(inscripcionSchema),
   boletos.inscribirse,
 );
 

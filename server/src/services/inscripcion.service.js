@@ -6,21 +6,21 @@ import { finalizarEventosVencidos } from './evento.service.js';
 
 const MAX_REINTENTOS_CODIGO = 5;
 
-// Inscribe a un visitante en un evento.
-//  - Todo ocurre en UNA transacción de base de datos.
-//  - El cupo se resta con un UPDATE condicional ("cupo_disponible > 0") que es atómico:
-//    si dos personas piden el último lugar a la vez, Postgres deja pasar solo a una.
-//  - Si algo falla después de restar (ej. correo duplicado), la transacción se revierte
-//    y el cupo vuelve a su valor original.
-export const inscribir = async (idEvento, { nombre, gmail }) => {
+// Inscribe a una cuenta (organizador o visitante) en un evento.
+//  - Regla 2: los datos (nombre, gmail, DNI, teléfono) se toman de la cuenta con sesión iniciada.
+//  - Regla 23: un organizador no puede inscribirse a un evento que él mismo creó.
+//  - Todo ocurre en UNA transacción: el cupo se resta con un UPDATE condicional atómico
+//    ("cupo_disponible > 0"), así dos personas no se llevan el último lugar a la vez.
+export const inscribir = async (idEvento, usuario) => {
   await finalizarEventosVencidos();
 
-  // Regla 23: un organizador no puede inscribirse al evento que él mismo creó
-  const duenio = await prisma.evento.findUnique({
+  const evento = await prisma.evento.findUnique({
     where: { id_evento: idEvento },
-    select: { organizador: { select: { gmail: true } } },
+    select: { id_organizador: true },
   });
-  if (duenio && duenio.organizador.gmail === gmail) {
+  if (!evento) throw new AppError(404, 'El evento no existe');
+
+  if (usuario.rol === 'organizador' && evento.id_organizador === usuario.id_organizador) {
     throw new AppError(403, 'No puedes inscribirte a un evento que tú mismo creaste');
   }
 
@@ -29,35 +29,38 @@ export const inscribir = async (idEvento, { nombre, gmail }) => {
     try {
       // eslint-disable-next-line no-await-in-loop
       return await prisma.$transaction(async (tx) => {
-        // Regla 1: no inscribirse dos veces al mismo evento
-        const duplicado = await tx.boleto.findUnique({
-          where: { id_evento_gmail: { id_evento: idEvento, gmail } },
+        // Una persona (mismo correo o mismo DNI) no puede inscribirse dos veces al mismo evento
+        const duplicado = await tx.boleto.findFirst({
+          where: { id_evento: idEvento, OR: [{ gmail: usuario.gmail }, { dni: usuario.dni }] },
           select: { id_boleto: true },
         });
-        if (duplicado) throw new AppError(409, 'Este correo ya está inscripto en este evento');
+        if (duplicado) throw new AppError(409, 'Ya estás inscripto en este evento');
 
-        // Reglas 5 y 14: restar un cupo solo si el evento está disponible y queda lugar
         const resultado = await tx.evento.updateMany({
           where: { id_evento: idEvento, estado: 'Disponible', cupo_disponible: { gt: 0 } },
           data: { cupo_disponible: { decrement: 1 } },
         });
 
         if (resultado.count === 0) {
-          const evento = await tx.evento.findUnique({
-            where: { id_evento: idEvento },
-            select: { estado: true },
-          });
-          if (!evento) throw new AppError(404, 'El evento no existe');
-          if (evento.estado === 'Finalizado') throw new AppError(409, 'El evento ya finalizó');
+          const actual = await tx.evento.findUnique({ where: { id_evento: idEvento }, select: { estado: true } });
+          if (!actual) throw new AppError(404, 'El evento no existe');
+          if (actual.estado === 'Finalizado') throw new AppError(409, 'El evento ya finalizó');
           throw new AppError(409, 'El evento está agotado: no quedan cupos disponibles');
         }
 
         const boleto = await tx.boleto.create({
-          data: { id_evento: idEvento, nombre, gmail, codigo },
+          data: {
+            id_evento: idEvento,
+            nombre: usuario.nombre,
+            gmail: usuario.gmail,
+            dni: usuario.dni,
+            numero_tel: usuario.numero_tel,
+            codigo,
+          },
           select: { id_boleto: true, codigo: true, nombre: true, gmail: true },
         });
 
-        const evento = await tx.evento.findUnique({
+        const datosEvento = await tx.evento.findUnique({
           where: { id_evento: idEvento },
           select: {
             id_evento: true,
@@ -71,14 +74,14 @@ export const inscribir = async (idEvento, { nombre, gmail }) => {
           },
         });
 
-        return { boleto, evento };
+        return { boleto, evento: datosEvento };
       });
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
         // Si chocó el código aleatorio (rarísimo), se reintenta con otro código.
         if (String(err.meta?.target ?? '').includes('codigo')) continue;
-        // Si no, fue una carrera con la misma pareja (evento, correo)
-        throw new AppError(409, 'Este correo ya está inscripto en este evento');
+        // Si no, fue una carrera con la misma persona (correo o DNI ya inscripto)
+        throw new AppError(409, 'Ya estás inscripto en este evento');
       }
       throw err;
     }

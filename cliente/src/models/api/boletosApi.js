@@ -2,8 +2,8 @@ import { peticion } from './cliente.js';
 
 export const boletosApi = {
   // ----- público -----
-  inscribirse: (idEvento, datos) =>
-    peticion(`/eventos/${idEvento}/inscripciones`, { metodo: 'POST', cuerpo: datos }),
+  // Los datos de la persona salen de su cuenta (sesión iniciada): no se envía ningún dato
+  inscribirse: (idEvento) => peticion(`/eventos/${idEvento}/inscripciones`, { metodo: 'POST' }),
   cancelar: (codigo) => peticion('/boletos/cancelar', { metodo: 'POST', cuerpo: { codigo } }),
 
   // ----- gestión (asistencia) -----

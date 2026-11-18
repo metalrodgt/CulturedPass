@@ -1,29 +1,33 @@
 import { useEffect, useState } from 'react';
-import { useAccionesCuenta } from '../../controllers/useCuentas.js';
+import { idDeCuenta, useAccionesCuenta } from '../../controllers/useCuentas.js';
 import { useModal } from '../../controllers/ModalContext.jsx';
 import ModalBase from './ModalBase.jsx';
 import Icono from '../components/Icono.jsx';
 
-// Se prioriza "Deshabilitar" sobre "Eliminar" y se explica todo lo que se pierde en el borrado en cascada
-export default function EliminarCuenta({ cuenta, onCerrar }) {
+// Se prioriza "Deshabilitar" sobre "Eliminar". tipo: 'organizador' | 'visitante'
+export default function EliminarCuenta({ cuenta, tipo = 'organizador', onCerrar }) {
   const { mostrarAviso, refrescarDatos } = useModal();
-  const { impacto, aprobacion, eliminar, cargando, error } = useAccionesCuenta();
+  const { impacto, aprobacion, eliminar, cargando, error } = useAccionesCuenta(tipo);
+  const id = idDeCuenta(cuenta);
+  const esOrganizador = tipo === 'organizador';
   const [datos, setDatos] = useState(null);
   const [errorImpacto, setErrorImpacto] = useState('');
 
+  // Solo las cuentas de organizador arrastran eventos y boletos en cascada
   useEffect(() => {
+    if (!esOrganizador) return undefined;
     let activo = true;
-    impacto(cuenta.id_organizador)
+    impacto(id)
       .then((r) => activo && setDatos(r))
       .catch((e) => activo && setErrorImpacto(e.message));
     return () => {
       activo = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cuenta.id_organizador]);
+  }, [id, esOrganizador]);
 
   const deshabilitar = async () => {
-    const r = await aprobacion(cuenta.id_organizador, false);
+    const r = await aprobacion(id, false);
     if (r.ok) {
       refrescarDatos();
       onCerrar();
@@ -32,7 +36,7 @@ export default function EliminarCuenta({ cuenta, onCerrar }) {
   };
 
   const borrar = async () => {
-    const r = await eliminar(cuenta.id_organizador);
+    const r = await eliminar(id);
     if (r.ok) {
       refrescarDatos();
       onCerrar();
@@ -47,24 +51,27 @@ export default function EliminarCuenta({ cuenta, onCerrar }) {
 
       <div className="modal__advertencia modal__advertencia--columna">
         <p>
-          <Icono nombre="warning" /> <strong>Se borrará todo esto de forma permanente:</strong>
+          <Icono nombre="warning" /> <strong>Se borrará de forma permanente:</strong>
         </p>
-        {errorImpacto && <p>No se pudo calcular el impacto: {errorImpacto}</p>}
-        {!datos && !errorImpacto && <p>Calculando…</p>}
-        {datos && (
-          <ul>
-            <li>La cuenta de {cuenta.gmail}</li>
-            <li>{datos.eventos} evento(s) creados por esta cuenta</li>
-            <li>{datos.boletos} boleto(s) / inscripciones de esos eventos</li>
-          </ul>
-        )}
+        <ul>
+          <li>La cuenta de {cuenta.gmail}</li>
+          {esOrganizador && errorImpacto && <li>No se pudo calcular el impacto: {errorImpacto}</li>}
+          {esOrganizador && !datos && !errorImpacto && <li>Calculando…</li>}
+          {esOrganizador && datos && (
+            <>
+              <li>{datos.eventos} evento(s) creados por esta cuenta</li>
+              <li>{datos.boletos} boleto(s) / inscripciones de esos eventos</li>
+            </>
+          )}
+          {!esOrganizador && <li>Los boletos que ya emitió se conservan.</li>}
+        </ul>
       </div>
 
       {cuenta.aprobacion && (
         <div className="modal__recomendacion">
           <p>
             <Icono nombre="info" /> Si solo quieres que no pueda iniciar sesión, es mejor <strong>deshabilitarla</strong>: la
-            cuenta y sus eventos se conservan y puedes volver a habilitarla cuando quieras.
+            cuenta se conserva y puedes volver a autorizarla cuando quieras.
           </p>
           <button type="button" className="boton" onClick={deshabilitar} disabled={cargando}>
             <Icono nombre="block" /> Deshabilitar cuenta

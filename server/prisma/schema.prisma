@@ -30,6 +30,7 @@ model Organizador {
   id_organizador Int      @id @default(autoincrement())
   nombre         String
   gmail          String   @unique(map: "uq_organizador_gmail")
+  dni            String   @unique(map: "uq_organizador_dni")
   numero_tel     String
   contrasena     String
   aprobacion     Boolean  @default(false)
@@ -69,6 +70,8 @@ model Boleto {
   fecha_creacion  DateTime         @default(now()) @db.Timestamptz(6)
   nombre          String
   gmail           String
+  dni             String?
+  numero_tel      String?
   codigo          String           @unique(map: "uq_boleto_codigo")
   estado          EstadoAsistencia @default(Ausente)
   hora_asistencia DateTime?        @db.Timestamptz(6)
@@ -76,4 +79,25 @@ model Boleto {
 
   @@unique([id_evento, gmail], map: "uq_boleto_evento_gmail")
   @@map("boleto")
+}
+
+// Cuenta de visitante: necesita ser autorizada por un organizador para iniciar sesión
+model Visitante {
+  id_visitante Int     @id @default(autoincrement())
+  nombre       String
+  gmail        String  @unique(map: "uq_visitante_gmail")
+  dni          String  @unique(map: "uq_visitante_dni")
+  numero_tel   String
+  contrasena   String
+  aprobacion   Boolean @default(false)
+
+  @@map("visitante")
+}
+
+// Ajustes editables desde la página (claves de registro)
+model Configuracion {
+  nombre String @id
+  valor  String
+
+  @@map("configuracion")
 }

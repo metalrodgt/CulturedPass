@@ -1,32 +1,20 @@
-import { useState } from 'react';
-import { hayErrores, validarGmail, validarTexto } from '../../models/validaciones.js';
+import { useAuth } from '../../controllers/AuthContext.jsx';
 import { useInscripcion } from '../../controllers/useInscripcion.js';
 import { useModal } from '../../controllers/ModalContext.jsx';
 import ModalBase from './ModalBase.jsx';
 import BotonCerrar from '../components/BotonCerrar.jsx';
-import Campo from '../components/Campo.jsx';
 
+// Regla 2: para inscribirse hace falta una cuenta. Ya no se piden datos: se toman de la cuenta.
 export default function Inscripcion({ evento, onCerrar }) {
+  const { usuario } = useAuth();
   const { abrirModal, refrescarDatos } = useModal();
   const { inscribirse, cargando, error } = useInscripcion();
-  const [valores, setValores] = useState({ nombre: '', gmail: '' });
-  const [errores, setErrores] = useState({});
 
-  const cambiar = (campo) => (e) => setValores((v) => ({ ...v, [campo]: e.target.value }));
-
-  const enviar = async (e) => {
-    e.preventDefault();
-    const nuevos = {
-      nombre: validarTexto(valores.nombre, 'El nombre', 100),
-      gmail: validarGmail(valores.gmail),
-    };
-    setErrores(nuevos);
-    if (hayErrores(nuevos)) return;
-
-    const r = await inscribirse(evento.id_evento, { nombre: valores.nombre.trim(), gmail: valores.gmail.trim() });
+  const confirmar = async () => {
+    const r = await inscribirse(evento.id_evento);
     if (r.ok) {
       refrescarDatos();
-      // Regla 18: el código se muestra una sola vez en esta ventana
+      // El código se muestra una sola vez en la ventana siguiente
       abrirModal('codigo-boleto', { boleto: r.datos.boleto, evento: r.datos.evento });
     }
   };
@@ -38,46 +26,26 @@ export default function Inscripcion({ evento, onCerrar }) {
         Inscripción a
         <br />“{evento.nombre_evento}”
       </h2>
-      <p className="modal__subtitulo modal__subtitulo--linea">Rellenar datos</p>
+      <p className="modal__subtitulo modal__subtitulo--linea">Confirma tus datos</p>
 
-      <form onSubmit={enviar} noValidate>
-        <Campo etiqueta="Nombre completo:" id="ins-nombre" error={errores.nombre}>
-          <input
-            id="ins-nombre"
-            className="entrada"
-            value={valores.nombre}
-            onChange={cambiar('nombre')}
-            maxLength={100}
-            autoComplete="name"
-            autoFocus
-            aria-invalid={Boolean(errores.nombre)}
-          />
-        </Campo>
-        <Campo etiqueta="Correo electrónico:" id="ins-gmail" error={errores.gmail}>
-          <input
-            id="ins-gmail"
-            type="email"
-            className="entrada"
-            value={valores.gmail}
-            onChange={cambiar('gmail')}
-            maxLength={254}
-            autoComplete="email"
-            inputMode="email"
-            aria-invalid={Boolean(errores.gmail)}
-          />
-        </Campo>
+      <dl className="datos-cuenta">
+        <div><dt>Nombre:</dt><dd>{usuario?.nombre}</dd></div>
+        <div><dt>Gmail:</dt><dd>{usuario?.gmail}</dd></div>
+        <div><dt>DNI:</dt><dd>{usuario?.dni}</dd></div>
+        <div><dt>Teléfono:</dt><dd>{usuario?.numero_tel}</dd></div>
+      </dl>
+      <p className="modal__texto">Usaremos los datos de tu cuenta. Si algo está mal, pídele a un organizador que los corrija.</p>
 
-        {error && <p className="modal__error" role="alert">{error}</p>}
+      {error && <p className="modal__error" role="alert">{error}</p>}
 
-        <div className="modal__acciones">
-          <button type="submit" className="boton" disabled={cargando}>
-            {cargando ? 'Inscribiendo…' : 'Inscribirse'}
-          </button>
-          <button type="button" className="boton" onClick={onCerrar}>
-            Descartar
-          </button>
-        </div>
-      </form>
+      <div className="modal__acciones">
+        <button type="button" className="boton" onClick={confirmar} disabled={cargando}>
+          {cargando ? 'Inscribiendo…' : 'Inscribirme'}
+        </button>
+        <button type="button" className="boton" onClick={onCerrar}>
+          Descartar
+        </button>
+      </div>
     </ModalBase>
   );
 }

@@ -12,7 +12,7 @@ import { limpiarIntentos, registrarFallo, segundosDeBloqueo } from '../middlewar
 
 // Reglas 1, 2, 5, 14, 17, 18, 23
 export const inscribirse = asyncHandler(async (req, res) => {
-  const { boleto, evento } = await inscribir(req.params.id, req.body);
+  const { boleto, evento } = await inscribir(req.params.id, req.usuario);
   const eventoTexto = serializarEvento(evento);
 
   // Correo en segundo plano (si falla, la inscripción ya quedó guardada)
@@ -113,6 +113,7 @@ export const listarPorEvento = asyncHandler(async (req, res) => {
         { nombre: { contains: q, mode: 'insensitive' } },
         { gmail: { contains: q.toLowerCase() } },
         { codigo: { contains: q.toUpperCase() } },
+        { dni: { contains: q } },
       ],
     }),
   };

@@ -1,9 +1,8 @@
-// CONTROLADOR · inscripción de un visitante a un evento
 import { boletosApi } from '../models/api/boletosApi.js';
 import { useAccion } from './useAccion.js';
 
 export function useInscripcion() {
   const { ejecutar, cargando, error } = useAccion();
-  const inscribirse = (idEvento, datos) => ejecutar(() => boletosApi.inscribirse(idEvento, datos));
+  const inscribirse = (idEvento) => ejecutar(() => boletosApi.inscribirse(idEvento));
   return { inscribirse, cargando, error };
 }

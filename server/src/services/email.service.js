@@ -85,3 +85,38 @@ export const notificarCambiosEvento = async ({ nombreEvento, cambios, destinatar
     });
   }
 };
+
+const textoRol = (rol) => (rol === 'organizador' ? 'organizador' : 'visitante');
+
+// Se envía cuando una cuenta (organizador o visitante) es autorizada
+export const enviarCuentaAutorizada = ({ cuenta, rol }) =>
+  enviarSeguro({
+    para: cuenta.gmail,
+    asunto: 'Tu cuenta de CulturedPass fue autorizada',
+    html: `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto"><h2>Tu cuenta fue autorizada</h2><p>Hola <strong>${h(cuenta.nombre)}</strong>, tu cuenta de ${textoRol(rol)} ya fue autorizada.</p><p>Ya puedes iniciar sesión con el correo <strong>${h(cuenta.gmail)}</strong> y la contraseña que elegiste al registrarte.</p></div>`,
+    texto: `Hola ${cuenta.nombre}, tu cuenta de ${textoRol(rol)} ya fue autorizada. Ya puedes iniciar sesión con el correo ${cuenta.gmail} y la contraseña que elegiste al registrarte.`,
+  });
+
+// Se envía cuando otra persona (administrador u organizador) modifica los datos de una cuenta.
+// Por seguridad NUNCA se envía la contraseña por correo: solo se avisa si fue cambiada.
+export const enviarDatosActualizados = async ({ anterior, nueva, contrasenaCambiada }) => {
+  const destinos = new Set([nueva.gmail]);
+  if (anterior.gmail !== nueva.gmail) destinos.add(anterior.gmail); // también al correo viejo, como aviso
+  const filaDato = (etiqueta, valor) => fila(etiqueta, valor);
+  const html = `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto">
+    <h2>Se actualizaron los datos de tu cuenta</h2>
+    <p>Hola <strong>${h(nueva.nombre)}</strong>, estos son los datos actuales de tu cuenta de CulturedPass:</p>
+    <table style="border-collapse:collapse;background:#f7f7f7;border-radius:8px">
+      ${filaDato('Nombre', nueva.nombre)}
+      ${filaDato('Correo (para iniciar sesión)', nueva.gmail)}
+      ${filaDato('DNI', nueva.dni)}
+      ${filaDato('Teléfono', nueva.numero_tel)}
+    </table>
+    <p>${contrasenaCambiada ? 'Tu contraseña fue modificada. Pídesela a la persona que hizo el cambio: por seguridad no se envía por correo.' : 'Tu contraseña no fue modificada.'}</p>
+    <p>Debes iniciar sesión nuevamente con estos datos.</p></div>`;
+  const texto = `Se actualizaron los datos de tu cuenta.\nNombre: ${nueva.nombre}\nCorreo: ${nueva.gmail}\nDNI: ${nueva.dni}\nTeléfono: ${nueva.numero_tel}\n${contrasenaCambiada ? 'Tu contraseña fue modificada (pídesela a quien hizo el cambio).' : 'Tu contraseña no fue modificada.'}\nDebes iniciar sesión nuevamente.`;
+  for (const para of destinos) {
+    // eslint-disable-next-line no-await-in-loop
+    await enviarSeguro({ para, asunto: 'Se actualizaron los datos de tu cuenta de CulturedPass', html, texto });
+  }
+};

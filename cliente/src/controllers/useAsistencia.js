@@ -1,4 +1,3 @@
-// CONTROLADOR · lista de asistencia de un evento
 import { useMemo, useState } from 'react';
 import { boletosApi } from '../models/api/boletosApi.js';
 import { fechaDeTimestamp, normalizar } from '../models/formato.js';
@@ -19,7 +18,7 @@ export function useAsistencia(idEvento) {
     return boletos.filter((b) => {
       if (filtro !== 'Todos' && b.estado !== filtro) return false;
       if (!t) return true;
-      const texto = normalizar(`${b.id_boleto} ${b.codigo} ${b.nombre} ${b.gmail} ${fechaDeTimestamp(b.fecha_creacion)}`);
+      const texto = normalizar(`${b.id_boleto} ${b.codigo} ${b.nombre} ${b.dni ?? ''} ${b.gmail} ${fechaDeTimestamp(b.fecha_creacion)}`);
       return texto.includes(t);
     });
   }, [boletos, busqueda, filtro]);

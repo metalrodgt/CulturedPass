@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { eventosApi } from '../../models/api/eventosApi.js';
 import { fechaLegible } from '../../models/formato.js';
+import { useAuth } from '../../controllers/AuthContext.jsx';
 import { useModal } from '../../controllers/ModalContext.jsx';
 import ModalBase from './ModalBase.jsx';
 import BotonCerrar from '../components/BotonCerrar.jsx';
@@ -8,6 +9,7 @@ import ImagenPortada from '../components/ImagenPortada.jsx';
 
 export default function DetalleEvento({ evento: inicial, onCerrar }) {
   const { abrirModal } = useModal();
+  const { usuario } = useAuth();
   const [evento, setEvento] = useState(inicial);
 
   // Se pide el evento actualizado para mostrar el cupo real
@@ -59,9 +61,13 @@ export default function DetalleEvento({ evento: inicial, onCerrar }) {
             type="button"
             className="boton boton--grande"
             disabled={agotado}
-            onClick={() => abrirModal('inscripcion', { evento })}
+            onClick={() =>
+              usuario
+                ? abrirModal('inscripcion', { evento })
+                : abrirModal('login', { mensaje: 'Inicia sesión con tu cuenta para inscribirte a un evento.' })
+            }
           >
-            {agotado ? 'Cupo agotado' : 'Inscribirse'}
+            {agotado ? 'Cupo agotado' : usuario ? 'Inscribirse' : 'Inicia sesión para inscribirte'}
           </button>
         )}
       </div>
