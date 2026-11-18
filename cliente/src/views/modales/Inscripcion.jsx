@@ -14,8 +14,8 @@ export default function Inscripcion({ evento, onCerrar }) {
     const r = await inscribirse(evento.id_evento);
     if (r.ok) {
       refrescarDatos();
-      // El código se muestra una sola vez en la ventana siguiente
-      abrirModal('codigo-boleto', { boleto: r.datos.boleto, evento: r.datos.evento });
+      // Regla 18: ya no se muestra el código; se avisa que el boleto está en "Mis boletos"
+      abrirModal('inscripcion-exitosa', { evento: r.datos.evento });
     }
   };
 

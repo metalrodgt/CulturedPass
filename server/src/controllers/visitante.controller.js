@@ -3,13 +3,13 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../config/prisma.js';
 import { AppError } from '../utils/AppError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
-import { verificarDisponibilidad } from '../utils/cuentas.js';
+import { actualizarCuenta, verificarDisponibilidad } from '../utils/cuentas.js';
 import { calcularHuella } from '../utils/huella.js';
 import { enviarCuentaAutorizada, enviarDatosActualizados } from '../services/email.service.js';
 
-// Gestión de cuentas de VISITANTES. Cualquier organizador aprobado puede autorizar,
-// deshabilitar, editar o eliminar visitantes (ver gestion.routes.js).
-// Para restringirlo a administradores basta agregar "soloAdministrador" a estas rutas.
+// Gestión de cuentas de VISITANTES:
+//  - Autorizar / deshabilitar / eliminar: cualquier organizador (la regla 2 exige que un organizador autorice la cuenta).
+//  - Editar datos: SOLO un administrador (ver gestion.routes.js). Los organizadores no ven el DNI ni el teléfono.
 const SELECT_SEGURO = {
   id_visitante: true,
   nombre: true,
@@ -27,7 +27,16 @@ const obtener = async (id) => {
 
 export const listar = asyncHandler(async (req, res) => {
   const cuentas = await prisma.visitante.findMany({ select: SELECT_SEGURO, orderBy: { id_visitante: 'asc' } });
-  res.json({ cuentas });
+  const esAdmin = req.usuario.administrador;
+  res.json({
+    cuentas: cuentas.map((c) => ({
+      ...c,
+      dni: esAdmin ? c.dni : null,
+      numero_tel: esAdmin ? c.numero_tel : null,
+      puede_editar: esAdmin,
+      puede_gestionar: true,
+    })),
+  });
 });
 
 // Autorizar / deshabilitar. Al deshabilitar, su sesión se cierra sola (middleware autenticarCuenta).
@@ -47,6 +56,7 @@ export const cambiarAprobacion = asyncHandler(async (req, res) => {
   });
 });
 
+// Solo administrador. La persona recibe un correo con sus datos actuales (y la contraseña nueva si se cambió).
 export const editar = asyncHandler(async (req, res) => {
   const cuenta = await obtener(req.params.id);
   const { nombre, gmail, dni, numero_tel, contrasena } = req.body;
@@ -57,13 +67,12 @@ export const editar = asyncHandler(async (req, res) => {
   if (contrasena) data.contrasena = await bcrypt.hash(contrasena, 12);
 
   try {
-    const actualizada = await prisma.visitante.update({ where: { id_visitante: req.params.id }, data });
-    // Su sesión se cierra sola si cambió algún dato de acceso; además se le avisa por correo
-    if (calcularHuella(cuenta) !== calcularHuella(actualizada)) {
-      enviarDatosActualizados({ anterior: cuenta, nueva: actualizada, contrasenaCambiada: Boolean(contrasena) }).catch(() => {});
+    const { antes, actualizada } = await actualizarCuenta('visitante', cuenta.id_visitante, data);
+    if (calcularHuella(antes) !== calcularHuella(actualizada)) {
+      enviarDatosActualizados({ anterior: antes, nueva: actualizada, contrasenaNueva: contrasena || null }).catch(() => {});
     }
     const { contrasena: _omitida, ...segura } = actualizada;
-    res.json({ mensaje: 'Cuenta actualizada', cuenta: segura, sesionCerrada: false });
+    res.json({ mensaje: 'Cuenta actualizada. Se le envió un correo con sus datos.', cuenta: segura, sesionCerrada: false });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
       throw new AppError(409, 'Ya existe otra cuenta con ese correo o ese DNI');

@@ -3,8 +3,9 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../controllers/AuthContext.jsx';
 import { useModal } from '../../controllers/ModalContext.jsx';
 
-// Regla 3: solo el organizador accede a la gestión de eventos y cuentas
-export default function RutaProtegida({ children }) {
+// Exige sesión iniciada. Con rol="organizador" además exige que sea organizador
+// (los visitantes no tienen acceso a la gestión).
+export default function RutaProtegida({ children, rol }) {
   const { usuario, cargando } = useAuth();
   const { abrirModal } = useModal();
 
@@ -13,7 +14,6 @@ export default function RutaProtegida({ children }) {
   }, [cargando, usuario, abrirModal]);
 
   if (cargando) return <p className="cargando">Cargando…</p>;
-  // Los visitantes no tienen acceso a la gestión
-  if (!usuario || usuario.rol !== 'organizador') return <Navigate to="/" replace />;
+  if (!usuario || (rol && usuario.rol !== rol)) return <Navigate to="/" replace />;
   return children;
 }

@@ -152,3 +152,42 @@ export const marcarAsistencia = asyncHandler(async (req, res) => {
   const boleto = await prisma.boleto.findUnique({ where: { id_boleto: id } });
   res.json({ mensaje: `Boleto marcado como ${estado}`, boleto });
 });
+
+// ===================== MIS BOLETOS (cualquier cuenta con sesión) =====================
+
+export const misBoletos = asyncHandler(async (req, res) => {
+  const u = req.usuario;
+  const where = u.rol === 'organizador' ? { id_organizador_inscrito: u.id_organizador } : { id_visitante: u.id_visitante };
+
+  const boletos = await prisma.boleto.findMany({
+    where,
+    orderBy: { fecha_creacion: 'desc' },
+    include: {
+      evento: {
+        select: {
+          id_evento: true,
+          nombre_evento: true,
+          fecha_evento: true,
+          fecha_final: true,
+          hora_inicio: true,
+          hora_finalizacion: true,
+          ubicacion: true,
+          estado: true,
+        },
+      },
+    },
+  });
+
+  res.json({
+    boletos: boletos.map((b) => ({
+      id_boleto: b.id_boleto,
+      codigo: b.codigo,
+      fecha_creacion: b.fecha_creacion,
+      nombre: b.nombre,
+      gmail: b.gmail,
+      estado: b.estado,
+      hora_asistencia: b.hora_asistencia,
+      evento: serializarEvento(b.evento),
+    })),
+  });
+});

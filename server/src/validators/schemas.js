@@ -177,3 +177,11 @@ export const clavesSchema = z
     message: 'Las claves de organizador y de visitante deben ser diferentes',
     path: ['clave_visitante'],
   });
+
+// ----- Recuperación de contraseña -----
+export const recuperarSchema = z.object({ gmail });
+
+export const restablecerSchema = z.object({
+  token: z.string({ required_error: 'El enlace no es válido' }).min(20, 'El enlace no es válido').max(2000, 'El enlace no es válido'),
+  contrasena,
+});

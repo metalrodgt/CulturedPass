@@ -90,6 +90,11 @@ export default function Login({ onCerrar, mensaje }) {
           </button>
         </div>
         <p className="modal__enlace">
+          <button type="button" className="boton boton--enlace boton--claro" onClick={() => abrirModal('recuperar-contrasena')}>
+            ¿Olvidaste tu contraseña?
+          </button>
+        </p>
+        <p className="modal__enlace">
           ¿No tienes cuenta?{' '}
           <button type="button" className="boton boton--enlace boton--claro" onClick={() => abrirModal('registro')}>
             Regístrate

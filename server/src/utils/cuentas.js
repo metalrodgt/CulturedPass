@@ -54,3 +54,24 @@ export const verificarDisponibilidad = async ({ gmail, dni }, excluir = null) =>
   if (otros.some((c) => c.gmail === gmail)) throw new AppError(409, 'Ya existe una cuenta con ese correo');
   if (otros.some((c) => c.dni === dni)) throw new AppError(409, 'Ya existe una cuenta con ese DNI');
 };
+
+// Actualiza una cuenta y copia sus datos nuevos a los boletos que ya emitió
+// (así la lista de asistencia y "Mis boletos" siempre muestran datos actuales).
+export const actualizarCuenta = (rol, id, data) =>
+  prisma.$transaction(async (tx) => {
+    const esOrg = rol === 'organizador';
+    const modelo = esOrg ? tx.organizador : tx.visitante;
+    const where = esOrg ? { id_organizador: id } : { id_visitante: id };
+    const antes = await modelo.findUnique({ where });
+    const actualizada = await modelo.update({ where, data });
+    await tx.boleto.updateMany({
+      where: esOrg ? { id_organizador_inscrito: id } : { id_visitante: id },
+      data: {
+        nombre: actualizada.nombre,
+        gmail: actualizada.gmail,
+        dni: actualizada.dni,
+        numero_tel: actualizada.numero_tel,
+      },
+    });
+    return { antes, actualizada };
+  });

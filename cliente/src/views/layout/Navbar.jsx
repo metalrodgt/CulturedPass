@@ -6,6 +6,7 @@ import Icono from '../components/Icono.jsx';
 import LogoCirculo from '../components/LogoCirculo.jsx';
 
 const claseEnlace = ({ isActive }) => `navbar__enlace ${isActive ? 'activo' : ''}`;
+const claseUsuario = ({ isActive }) => `navbar__usuario ${isActive ? 'activo' : ''}`;
 
 export default function Navbar() {
   const { usuario, cerrarSesion } = useAuth();
@@ -80,10 +81,16 @@ export default function Navbar() {
             Eventos
           </NavLink>
 
-          {/* Visitantes y organizadores pueden inscribirse, por eso ambos ven "Cancelar inscripción" */}
+          {/* Visitantes y organizadores pueden inscribirse, por eso ambos ven estas opciones */}
           <button type="button" className="navbar__enlace" onClick={abrir('cancelar')}>
             Cancelar inscripción
           </button>
+
+          {usuario && (
+            <NavLink to="/mis-boletos" className={claseEnlace}>
+              Mis boletos
+            </NavLink>
+          )}
 
           {!usuario && (
             <div className="navbar__sesion">
@@ -96,11 +103,9 @@ export default function Navbar() {
             </div>
           )}
 
+          {/* "Crear evento" ya no está en la barra: se crea desde Administrar */}
           {esOrganizador && (
             <>
-              <button type="button" className="navbar__enlace" onClick={abrir('crear-evento')}>
-                Crear
-              </button>
               <NavLink to="/gestion/eventos" className={claseEnlace}>
                 Administrar
               </NavLink>
@@ -120,10 +125,11 @@ export default function Navbar() {
               <button type="button" className="navbar__enlace navbar__enlace--chico" onClick={salir}>
                 Cerrar sesión
               </button>
-              <span className="navbar__usuario" title={usuario.gmail}>
+              {/* El ícono de la cuenta lleva a "Mi cuenta" */}
+              <NavLink to="/mi-cuenta" className={claseUsuario} title="Mi cuenta">
                 <Icono nombre="account_circle" className="navbar__avatar" />
                 <span className="navbar__usuario-nombre">{usuario.nombre}</span>
-              </span>
+              </NavLink>
             </div>
           )}
         </nav>

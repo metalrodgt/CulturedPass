@@ -21,6 +21,9 @@ router.post(
   boletos.inscribirse,
 );
 
+// Mis boletos: los boletos de los eventos en los que estoy inscripto
+router.get('/mis-boletos', autenticarCuenta, boletos.misBoletos);
+
 router.post('/boletos/cancelar', validar(cancelacionSchema), boletos.cancelar);
 
 export default router;

@@ -56,6 +56,9 @@ export const inscribir = async (idEvento, usuario) => {
             dni: usuario.dni,
             numero_tel: usuario.numero_tel,
             codigo,
+            // Vínculo con la cuenta: permite mostrar "Mis boletos"
+            id_visitante: usuario.rol === 'visitante' ? usuario.id_visitante : null,
+            id_organizador_inscrito: usuario.rol === 'organizador' ? usuario.id_organizador : null,
           },
           select: { id_boleto: true, codigo: true, nombre: true, gmail: true },
         });

@@ -23,10 +23,10 @@ export default function ListaCuentas({ tipo }) {
 
   const esVisitantes = tipo === 'visitante';
 
-  // Los visitantes los gestiona cualquier organizador; para los organizadores el servidor
-  // indica qué puede hacer cada uno (regla 9): puede_editar / puede_gestionar.
-  const puedeEditar = (c) => (esVisitantes ? true : c.puede_editar);
-  const puedeGestionar = (c) => (esVisitantes ? true : c.puede_gestionar);
+  // El servidor indica qué puede hacer quien consulta con cada cuenta (regla 9):
+  // puede_editar (solo administrador) y puede_gestionar (autorizar / eliminar).
+  const puedeEditar = (c) => Boolean(c.puede_editar);
+  const puedeGestionar = (c) => Boolean(c.puede_gestionar);
 
   const alternarAprobacion = async (cuenta) => {
     const id = idDeCuenta(cuenta);

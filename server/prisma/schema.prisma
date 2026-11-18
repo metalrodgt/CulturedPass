@@ -36,6 +36,7 @@ model Organizador {
   aprobacion     Boolean  @default(false)
   administrador  Boolean  @default(false)
   eventos        Evento[]
+  boletos        Boleto[] @relation("BoletoInscrito")
 
   @@map("organizador")
 }
@@ -75,9 +76,16 @@ model Boleto {
   codigo          String           @unique(map: "uq_boleto_codigo")
   estado          EstadoAsistencia @default(Ausente)
   hora_asistencia DateTime?        @db.Timestamptz(6)
+  // Cuenta que se inscribió (sirve para "Mis boletos"). Los boletos viejos pueden no tenerla.
+  id_visitante            Int?
+  id_organizador_inscrito Int?
   evento          Evento           @relation(fields: [id_evento], references: [id_evento], onDelete: Cascade, onUpdate: Cascade, map: "fk_boleto_evento")
+  visitante       Visitante?       @relation(fields: [id_visitante], references: [id_visitante], onDelete: SetNull, onUpdate: Cascade, map: "fk_boleto_visitante")
+  organizador_inscrito Organizador? @relation("BoletoInscrito", fields: [id_organizador_inscrito], references: [id_organizador], onDelete: SetNull, onUpdate: Cascade, map: "fk_boleto_organizador_inscrito")
 
   @@unique([id_evento, gmail], map: "uq_boleto_evento_gmail")
+  @@index([id_visitante], map: "idx_boleto_visitante")
+  @@index([id_organizador_inscrito], map: "idx_boleto_organizador_inscrito")
   @@map("boleto")
 }
 
@@ -90,6 +98,7 @@ model Visitante {
   numero_tel   String
   contrasena   String
   aprobacion   Boolean @default(false)
+  boletos      Boleto[]
 
   @@map("visitante")
 }

@@ -16,3 +16,4 @@ export const limiteLogin = crear(15 * MIN, 10, 'Demasiados intentos de inicio de
 export const limiteRegistro = crear(60 * MIN, 5, 'Demasiados registros desde esta conexión, intenta más tarde');
 // Mitigación parcial del spam de inscripciones (limitación conocida del proyecto)
 export const limiteInscripcion = crear(10 * MIN, 10, 'Demasiadas inscripciones desde esta conexión, intenta más tarde');
+export const limiteRecuperacion = crear(60 * MIN, 5, 'Demasiadas solicitudes de recuperación, intenta más tarde');

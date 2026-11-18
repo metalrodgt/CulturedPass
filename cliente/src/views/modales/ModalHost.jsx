@@ -1,7 +1,7 @@
 import { useModal } from '../../controllers/ModalContext.jsx';
 import DetalleEvento from './DetalleEvento.jsx';
 import Inscripcion from './Inscripcion.jsx';
-import CodigoBoleto from './CodigoBoleto.jsx';
+import InscripcionExitosa from './InscripcionExitosa.jsx';
 import CancelarInscripcion from './CancelarInscripcion.jsx';
 import Login from './Login.jsx';
 import Registro from './Registro.jsx';
@@ -12,12 +12,13 @@ import EliminarEvento from './EliminarEvento.jsx';
 import EditarCuenta from './EditarCuenta.jsx';
 import EliminarCuenta from './EliminarCuenta.jsx';
 import ClaveRegistro from './ClaveRegistro.jsx';
+import RecuperarContrasena from './RecuperarContrasena.jsx';
 
 // Nombre usado en abrirModal('nombre', props) -> componente
 const MODALES = {
   'detalle-evento': DetalleEvento,
   inscripcion: Inscripcion,
-  'codigo-boleto': CodigoBoleto,
+  'inscripcion-exitosa': InscripcionExitosa,
   cancelar: CancelarInscripcion,
   login: Login,
   registro: Registro,
@@ -28,6 +29,7 @@ const MODALES = {
   'editar-cuenta': EditarCuenta,
   'eliminar-cuenta': EliminarCuenta,
   'clave-registro': ClaveRegistro,
+  'recuperar-contrasena': RecuperarContrasena,
 };
 
 export default function ModalHost() {

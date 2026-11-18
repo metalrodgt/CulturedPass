@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   hayErrores,
   validarContrasena,
@@ -8,7 +7,6 @@ import {
   validarTelefono,
   validarTexto,
 } from '../../models/validaciones.js';
-import { useAuth } from '../../controllers/AuthContext.jsx';
 import { idDeCuenta, useAccionesCuenta } from '../../controllers/useCuentas.js';
 import { useModal } from '../../controllers/ModalContext.jsx';
 import ModalBase from './ModalBase.jsx';
@@ -16,11 +14,10 @@ import BotonCerrar from '../components/BotonCerrar.jsx';
 import Campo from '../components/Campo.jsx';
 import Icono from '../components/Icono.jsx';
 
+// Edición de OTRA cuenta (solo la hace un administrador). Cada persona edita la suya desde "Mi cuenta".
 // tipo: 'organizador' | 'visitante'
 export default function EditarCuenta({ cuenta, tipo = 'organizador', onCerrar }) {
-  const navigate = useNavigate();
-  const { cerrarSesion } = useAuth();
-  const { mostrarAviso, refrescarDatos, abrirModal } = useModal();
+  const { mostrarAviso, refrescarDatos } = useModal();
   const { editar, aprobacion, cargando, error } = useAccionesCuenta(tipo);
   const id = idDeCuenta(cuenta);
 
@@ -28,16 +25,14 @@ export default function EditarCuenta({ cuenta, tipo = 'organizador', onCerrar })
     nombre: cuenta.nombre,
     gmail: cuenta.gmail,
     dni: cuenta.dni ?? '',
-    numero_tel: cuenta.numero_tel,
+    numero_tel: cuenta.numero_tel ?? '',
     contrasena: '',
   });
   const [aprobada, setAprobada] = useState(cuenta.aprobacion);
   const [errores, setErrores] = useState({});
   const [ver, setVer] = useState(false);
 
-  const esPropia = Boolean(cuenta.es_propia);
-  // Visitantes: cualquier organizador. Organizadores: el servidor indica si se puede (regla 9).
-  const puedeCambiarAprobacion = tipo === 'visitante' ? true : Boolean(cuenta.puede_gestionar);
+  const puedeCambiarAprobacion = Boolean(cuenta.puede_gestionar);
 
   const cambiar = (campo) => (e) => setValores((v) => ({ ...v, [campo]: e.target.value }));
 
@@ -64,22 +59,13 @@ export default function EditarCuenta({ cuenta, tipo = 'organizador', onCerrar })
     const r = await editar(id, datos);
     if (!r.ok) return;
 
-    // Cambió sus propios datos de acceso: debe iniciar sesión de nuevo con los datos nuevos
-    if (r.datos.sesionCerrada) {
-      await cerrarSesion();
-      navigate('/');
-      mostrarAviso('Datos actualizados. Inicia sesión nuevamente con tus datos nuevos.');
-      abrirModal('login');
-      return;
-    }
-
     if (puedeCambiarAprobacion && aprobada !== cuenta.aprobacion) {
       const r2 = await aprobacion(id, aprobada);
       if (!r2.ok) return;
     }
     refrescarDatos();
     onCerrar();
-    mostrarAviso('Usuario editado correctamente');
+    mostrarAviso('Usuario editado correctamente. Se le envió un correo con sus datos.');
   };
 
   return (
@@ -101,7 +87,7 @@ export default function EditarCuenta({ cuenta, tipo = 'organizador', onCerrar })
         <Campo etiqueta="Número de teléfono:" id="cue-tel" error={errores.numero_tel}>
           <input id="cue-tel" type="tel" className="entrada" value={valores.numero_tel} onChange={cambiar('numero_tel')} maxLength={20} inputMode="tel" aria-invalid={Boolean(errores.numero_tel)} />
         </Campo>
-        <Campo etiqueta="Contraseña:" id="cue-pass" error={errores.contrasena} ayuda="Déjala vacía para no cambiarla. Mínimo 8 caracteres.">
+        <Campo etiqueta="Contraseña:" id="cue-pass" error={errores.contrasena} ayuda="Déjala vacía para no cambiarla. Si escribes una nueva, se le enviará por correo a la persona.">
           <div className="entrada-con-icono">
             <input id="cue-pass" type={ver ? 'text' : 'password'} className="entrada" value={valores.contrasena} onChange={cambiar('contrasena')} maxLength={72} autoComplete="new-password" placeholder="Nueva contraseña (opcional)" aria-invalid={Boolean(errores.contrasena)} />
             <button type="button" className="entrada-con-icono__boton" onClick={() => setVer((v) => !v)} aria-label={ver ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
@@ -127,9 +113,8 @@ export default function EditarCuenta({ cuenta, tipo = 'organizador', onCerrar })
         <p className="modal__advertencia">
           <Icono nombre="info" />
           <span>
-            {esPropia
-              ? 'Si cambias tus datos o tu contraseña, se cerrará tu sesión y tendrás que iniciar sesión con los datos nuevos.'
-              : 'Si cambias los datos o la contraseña de esta cuenta, tendrá que iniciar sesión de nuevo y se le enviará un correo con los datos actualizados (la contraseña nunca se envía por correo).'}
+            Al guardar, la persona recibirá un correo con sus datos actuales (y la contraseña nueva, si la cambiaste) y tendrá que
+            iniciar sesión de nuevo.
           </span>
         </p>
 

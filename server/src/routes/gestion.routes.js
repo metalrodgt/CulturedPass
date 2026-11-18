@@ -33,7 +33,7 @@ router.delete('/eventos/:id', id, eventos.eliminar);
 router.get('/eventos/:id/boletos', id, validar(filtroBoletosSchema, 'query'), boletos.listarPorEvento);
 router.patch('/boletos/:id/asistencia', id, validar(asistenciaSchema), boletos.marcarAsistencia);
 
-// --- Cuentas de organizadores (regla 9: los permisos se validan dentro del controlador) ---
+// --- Cuentas de organizadores (regla 9: los permisos se validan dentro del controlador; solo el administrador edita a otros) ---
 router.get('/organizadores', organizadores.listar);
 router.get('/organizadores/:id/impacto', id, organizadores.impactoEliminacion);
 router.put('/organizadores/:id', id, validar(editarCuentaSchema), organizadores.editar);
@@ -42,7 +42,8 @@ router.delete('/organizadores/:id', id, organizadores.eliminar);
 
 // --- Cuentas de visitantes (cualquier organizador) ---
 router.get('/visitantes', visitantes.listar);
-router.put('/visitantes/:id', id, validar(editarCuentaSchema), visitantes.editar);
+// Regla 9: solo un administrador edita los datos de otras cuentas
+router.put('/visitantes/:id', soloAdministrador, id, validar(editarCuentaSchema), visitantes.editar);
 router.patch('/visitantes/:id/aprobacion', id, validar(aprobacionSchema), visitantes.cambiarAprobacion);
 router.delete('/visitantes/:id', id, visitantes.eliminar);
 
