@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useAuth } from '../../controllers/AuthContext.jsx';
 import {
   FILTROS_APROBACION,
   idDeCuenta,
@@ -14,7 +13,6 @@ import Icono from './Icono.jsx';
 
 // Lista de cuentas con buscador y filtro. tipo: 'organizador' | 'visitante'
 export default function ListaCuentas({ tipo }) {
-  const { usuario } = useAuth();
   const { abrirModal, mostrarAviso, refrescarDatos } = useModal();
   const { cuentas, cargando, error } = useListaCuentas(tipo);
   const { visibles, busqueda, setBusqueda, aprobacion: filtro, setAprobacion: setFiltro } = useFiltroCuentas(cuentas);
@@ -23,10 +21,11 @@ export default function ListaCuentas({ tipo }) {
 
   const esVisitantes = tipo === 'visitante';
 
-  // El servidor indica qué puede hacer quien consulta con cada cuenta (regla 9):
-  // puede_editar (solo administrador) y puede_gestionar (autorizar / eliminar).
+  // El servidor indica qué puede hacer quien consulta con cada cuenta (regla 9).
+  // Lo que no puede usar NO se muestra: los botones de editar y eliminar solo los ve el administrador.
+  const puedeAutorizar = (c) => Boolean(c.puede_gestionar);
   const puedeEditar = (c) => Boolean(c.puede_editar);
-  const puedeGestionar = (c) => Boolean(c.puede_gestionar);
+  const puedeEliminar = (c) => Boolean(c.puede_eliminar);
 
   const alternarAprobacion = async (cuenta) => {
     const id = idDeCuenta(cuenta);
@@ -70,7 +69,8 @@ export default function ListaCuentas({ tipo }) {
 
       {visibles.map((c) => {
         const id = idDeCuenta(c);
-        const esPropia = tipo === 'organizador' && id === usuario?.id_organizador;
+        const claseAprobacion = c.aprobacion ? 'boton--verde' : 'boton--rojo';
+        const hayAcciones = puedeEditar(c) || puedeEliminar(c);
         return (
           <article key={`${tipo}-${id}`} className="fila fila--cuenta">
             <div className="dato dato--id">
@@ -81,8 +81,7 @@ export default function ListaCuentas({ tipo }) {
               <span className="dato__titulo">Nombre</span>
               <span className="dato__valor">
                 {c.nombre}
-                {c.administrador && <span className="insignia">{esPropia ? 'Tu cuenta · Admin' : 'Admin'}</span>}
-                {!c.administrador && esPropia && <span className="insignia">Tu cuenta</span>}
+                {c.administrador && <span className="insignia">Admin</span>}
               </span>
             </div>
             <div className="dato dato--gmail">
@@ -91,7 +90,7 @@ export default function ListaCuentas({ tipo }) {
             </div>
             <div className="dato dato--dni">
               <span className="dato__titulo">DNI</span>
-              <span className="dato__valor">{c.dni ?? '—'}</span>
+              <span className="dato__valor">{c.dni}</span>
             </div>
             <div className="dato dato--tel">
               <span className="dato__titulo">Teléfono</span>
@@ -99,38 +98,47 @@ export default function ListaCuentas({ tipo }) {
             </div>
             <div className="dato dato--aprob">
               <span className="dato__titulo">Aprobación</span>
-              <button
-                type="button"
-                className={`boton boton--chico ${c.aprobacion ? 'boton--verde' : 'boton--rojo'}`}
-                onClick={() => alternarAprobacion(c)}
-                disabled={!puedeGestionar(c) || procesando === id}
-                title={puedeGestionar(c) ? 'Clic para autorizar o deshabilitar' : 'No tienes permiso para cambiar la aprobación de esta cuenta'}
-              >
-                {c.aprobacion ? 'True' : 'False'}
-              </button>
+              {puedeAutorizar(c) ? (
+                <button
+                  type="button"
+                  className={`boton boton--chico ${claseAprobacion}`}
+                  onClick={() => alternarAprobacion(c)}
+                  disabled={procesando === id}
+                  title="Clic para autorizar o deshabilitar"
+                >
+                  {c.aprobacion ? 'True' : 'False'}
+                </button>
+              ) : (
+                // Sin permiso: se muestra solo el estado, sin que parezca un botón
+                <span className={`boton boton--chico estado-fijo ${claseAprobacion}`}>{c.aprobacion ? 'True' : 'False'}</span>
+              )}
             </div>
-            <div className="fila__acciones">
-              <button
-                type="button"
-                className="icono-boton"
-                onClick={() => abrirModal('editar-cuenta', { cuenta: c, tipo })}
-                disabled={!puedeEditar(c)}
-                aria-label={`Editar a ${c.nombre}`}
-                title={puedeEditar(c) ? 'Editar' : 'No tienes permiso para editar esta cuenta'}
-              >
-                <Icono nombre="edit" />
-              </button>
-              <button
-                type="button"
-                className="icono-boton icono-boton--peligro"
-                onClick={() => abrirModal('eliminar-cuenta', { cuenta: c, tipo })}
-                disabled={!puedeGestionar(c)}
-                aria-label={`Eliminar a ${c.nombre}`}
-                title={puedeGestionar(c) ? 'Eliminar' : 'No tienes permiso para eliminar esta cuenta'}
-              >
-                <Icono nombre="delete" />
-              </button>
-            </div>
+            {hayAcciones && (
+              <div className="fila__acciones">
+                {puedeEditar(c) && (
+                  <button
+                    type="button"
+                    className="icono-boton"
+                    onClick={() => abrirModal('editar-cuenta', { cuenta: c, tipo })}
+                    aria-label={`Editar a ${c.nombre}`}
+                    title="Editar"
+                  >
+                    <Icono nombre="edit" />
+                  </button>
+                )}
+                {puedeEliminar(c) && (
+                  <button
+                    type="button"
+                    className="icono-boton icono-boton--peligro"
+                    onClick={() => abrirModal('eliminar-cuenta', { cuenta: c, tipo })}
+                    aria-label={`Eliminar a ${c.nombre}`}
+                    title="Eliminar"
+                  >
+                    <Icono nombre="delete" />
+                  </button>
+                )}
+              </div>
+            )}
           </article>
         );
       })}

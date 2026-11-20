@@ -40,12 +40,13 @@ router.put('/organizadores/:id', id, validar(editarCuentaSchema), organizadores.
 router.patch('/organizadores/:id/aprobacion', id, validar(aprobacionSchema), organizadores.cambiarAprobacion);
 router.delete('/organizadores/:id', id, organizadores.eliminar);
 
-// --- Cuentas de visitantes (cualquier organizador) ---
+// --- Cuentas de visitantes (autorizar/deshabilitar: cualquier organizador; editar/eliminar: solo administrador) ---
 router.get('/visitantes', visitantes.listar);
 // Regla 9: solo un administrador edita los datos de otras cuentas
 router.put('/visitantes/:id', soloAdministrador, id, validar(editarCuentaSchema), visitantes.editar);
 router.patch('/visitantes/:id/aprobacion', id, validar(aprobacionSchema), visitantes.cambiarAprobacion);
-router.delete('/visitantes/:id', id, visitantes.eliminar);
+// Regla 9: solo un administrador elimina cuentas
+router.delete('/visitantes/:id', soloAdministrador, id, visitantes.eliminar);
 
 // --- Claves de registro (solo administrador) ---
 router.get('/claves', soloAdministrador, claves.verClaves);

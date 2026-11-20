@@ -8,8 +8,9 @@ import { calcularHuella } from '../utils/huella.js';
 import { enviarCuentaAutorizada, enviarDatosActualizados } from '../services/email.service.js';
 
 // Gestión de cuentas de VISITANTES:
-//  - Autorizar / deshabilitar / eliminar: cualquier organizador (la regla 2 exige que un organizador autorice la cuenta).
-//  - Editar datos: SOLO un administrador (ver gestion.routes.js). Los organizadores no ven el DNI ni el teléfono.
+//  - Autorizar / deshabilitar: cualquier organizador (la regla 2 exige que un organizador autorice la cuenta).
+//  - Editar datos y eliminar la cuenta: SOLO un administrador (ver gestion.routes.js).
+//  - Todos los organizadores ven los datos de la cuenta (incluidos DNI y teléfono).
 const SELECT_SEGURO = {
   id_visitante: true,
   nombre: true,
@@ -31,10 +32,9 @@ export const listar = asyncHandler(async (req, res) => {
   res.json({
     cuentas: cuentas.map((c) => ({
       ...c,
-      dni: esAdmin ? c.dni : null,
-      numero_tel: esAdmin ? c.numero_tel : null,
       puede_editar: esAdmin,
-      puede_gestionar: true,
+      puede_gestionar: true, // autorizar / deshabilitar: cualquier organizador
+      puede_eliminar: esAdmin,
     })),
   });
 });
@@ -81,7 +81,7 @@ export const editar = asyncHandler(async (req, res) => {
   }
 });
 
-// Los boletos que ya emitió esta persona se conservan (siguen siendo válidos y ocupando su cupo)
+// Solo administrador (ver gestion.routes.js). Los boletos que ya emitió esta persona se conservan (siguen siendo válidos y ocupando su cupo)
 export const eliminar = asyncHandler(async (req, res) => {
   await obtener(req.params.id);
   await prisma.visitante.delete({ where: { id_visitante: req.params.id } });

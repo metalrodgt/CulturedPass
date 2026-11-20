@@ -45,8 +45,8 @@ const obtenerCuenta = async (id, usuario, accion) => {
   return cuenta;
 };
 
-// Lista las cuentas de organizador (sin la tuya). Los datos sensibles (DNI y teléfono)
-// solo los ve un administrador.
+// Lista las cuentas de organizador (sin la tuya). Todos los organizadores ven los mismos datos
+// (incluidos DNI y teléfono); lo que cambia es qué botones puede usar cada uno.
 export const listar = asyncHandler(async (req, res) => {
   const cuentas = await prisma.organizador.findMany({
     where: { id_organizador: { not: req.usuario.id_organizador } },
@@ -57,11 +57,10 @@ export const listar = asyncHandler(async (req, res) => {
   res.json({
     cuentas: cuentas.map(({ _count, ...c }) => ({
       ...c,
-      dni: esAdmin ? c.dni : null,
-      numero_tel: esAdmin ? c.numero_tel : null,
       total_eventos: _count.eventos,
       puede_editar: esAdmin && !c.administrador,
-      puede_gestionar: esAdmin && !c.administrador,
+      puede_gestionar: esAdmin && !c.administrador, // autorizar / deshabilitar
+      puede_eliminar: esAdmin && !c.administrador,
     })),
   });
 });
