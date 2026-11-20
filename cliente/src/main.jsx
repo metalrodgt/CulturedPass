@@ -12,7 +12,8 @@ import './views/styles/paginas.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
+    {/* "future": activa desde ya el comportamiento de React Router 7 (quita los avisos amarillos de la consola) */}
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <ModalProvider>
         <AuthProvider>
           <App />
