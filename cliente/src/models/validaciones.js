@@ -21,14 +21,16 @@ export const validarGmail = (valor) => {
 export const validarTelefono = (valor) => {
   const t = (valor ?? '').trim();
   if (!t) return 'El teléfono es obligatorio';
-  if (!/^[0-9+() -]{6,20}$/.test(t)) return 'Teléfono inválido (6 a 20 caracteres: números, + ( ) -)';
+  // Solo números y + ( ) - espacio, entre 6 y 20 caracteres y al menos 6 dígitos
+  if (!/^(?=(?:\D*\d){6})[0-9+() -]{6,20}$/.test(t)) return 'Teléfono inválido (mínimo 6 números; se permiten + ( ) - y espacios)';
   return '';
 };
 
 export const validarDni = (valor) => {
   const t = (valor ?? '').trim();
   if (!t) return 'El DNI es obligatorio';
-  if (!/^[0-9]{7,8}$/.test(t)) return 'El DNI debe tener 7 u 8 números, sin puntos';
+  // 7 u 8 números, sin puntos ni espacios y sin empezar con 0
+  if (!/^[1-9][0-9]{6,7}$/.test(t)) return 'El DNI debe tener 7 u 8 números, sin puntos ni espacios y sin empezar con 0';
   return '';
 };
 

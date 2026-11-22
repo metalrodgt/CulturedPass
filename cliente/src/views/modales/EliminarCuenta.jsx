@@ -4,7 +4,7 @@ import { useModal } from '../../controllers/ModalContext.jsx';
 import ModalBase from './ModalBase.jsx';
 import Icono from '../components/Icono.jsx';
 
-// Se prioriza "Deshabilitar" sobre "Eliminar". tipo: 'organizador' | 'visitante'
+// Se prioriza "Desautorizar" sobre "Eliminar" (solo para organizadores: los visitantes no se autorizan). tipo: 'organizador' | 'visitante'
 export default function EliminarCuenta({ cuenta, tipo = 'organizador', onCerrar }) {
   const { mostrarAviso, refrescarDatos } = useModal();
   const { impacto, aprobacion, eliminar, cargando, error } = useAccionesCuenta(tipo);
@@ -31,7 +31,7 @@ export default function EliminarCuenta({ cuenta, tipo = 'organizador', onCerrar 
     if (r.ok) {
       refrescarDatos();
       onCerrar();
-      mostrarAviso('Cuenta deshabilitada. Su sesión se cerró.');
+      mostrarAviso('Cuenta desautorizada. Su sesión se cerró.');
     }
   };
 
@@ -67,14 +67,14 @@ export default function EliminarCuenta({ cuenta, tipo = 'organizador', onCerrar 
         </ul>
       </div>
 
-      {cuenta.aprobacion && (
+      {esOrganizador && cuenta.aprobacion && (
         <div className="modal__recomendacion">
           <p>
-            <Icono nombre="info" /> Si solo quieres que no pueda iniciar sesión, es mejor <strong>deshabilitarla</strong>: la
+            <Icono nombre="info" /> Si solo quieres que no pueda iniciar sesión, es mejor <strong>desautorizarla</strong>: la
             cuenta se conserva y puedes volver a autorizarla cuando quieras.
           </p>
           <button type="button" className="boton" onClick={deshabilitar} disabled={cargando}>
-            <Icono nombre="block" /> Deshabilitar cuenta
+            <Icono nombre="block" /> Desautorizar cuenta
           </button>
         </div>
       )}

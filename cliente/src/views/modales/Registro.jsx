@@ -15,9 +15,9 @@ import BotonCerrar from '../components/BotonCerrar.jsx';
 import Campo from '../components/Campo.jsx';
 import Icono from '../components/Icono.jsx';
 
-// Crear cuenta. La CLAVE decide el tipo de cuenta:
-//  - clave de organizador -> cuenta de organizador
-//  - clave de visitante   -> cuenta de visitante
+// Crear cuenta. La CLAVE es opcional y decide el tipo de cuenta:
+//  - sin clave                   -> cuenta de visitante (queda habilitada al instante)
+//  - con la clave de organizador -> cuenta de organizador (la autoriza un administrador)
 export default function Registro({ onCerrar }) {
   const { mostrarAviso } = useModal();
   const { ejecutar, cargando, error } = useAccion();
@@ -36,7 +36,6 @@ export default function Registro({ onCerrar }) {
       dni: validarDni(valores.dni),
       numero_tel: validarTelefono(valores.numero_tel),
       contrasena: validarContrasena(valores.contrasena),
-      clave: valores.clave.trim() ? '' : 'La clave es obligatoria',
     };
     setErrores(nuevos);
     if (hayErrores(nuevos)) return;
@@ -48,7 +47,8 @@ export default function Registro({ onCerrar }) {
         dni: valores.dni.trim(),
         numero_tel: valores.numero_tel.trim(),
         contrasena: valores.contrasena,
-        clave: valores.clave.trim(),
+        // La clave es opcional: sin clave se crea una cuenta de visitante
+        ...(valores.clave.trim() ? { clave: valores.clave.trim() } : {}),
       }),
     );
     if (r.ok) {
@@ -84,7 +84,7 @@ export default function Registro({ onCerrar }) {
             </button>
           </div>
         </Campo>
-        <Campo etiqueta="Clave:" id="reg-clave" error={errores.clave} ayuda="Te la entrega el personal de CulturedPass.">
+        <Campo etiqueta="Clave (opcional):" id="reg-clave" error={errores.clave} ayuda="Déjala vacía para crear una cuenta de visitante. Con la clave del personal se crea una cuenta de organizador.">
           <div className="entrada-con-icono">
             <input id="reg-clave" type={verClave ? 'text' : 'password'} className="entrada" value={valores.clave} onChange={cambiar('clave')} maxLength={100} autoComplete="off" aria-invalid={Boolean(errores.clave)} />
             <button type="button" className="entrada-con-icono__boton" onClick={() => setVerClave((v) => !v)} aria-label={verClave ? 'Ocultar clave' : 'Mostrar clave'}>

@@ -8,7 +8,7 @@ import { AppError } from '../utils/AppError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { actualizarCuenta, aUsuario, buscarPorGmail, idDe, verificarDisponibilidad } from '../utils/cuentas.js';
 import { calcularHuella } from '../utils/huella.js';
-import { rolPorClave } from '../services/claves.service.js';
+import { claveOrganizadorValida } from '../services/claves.service.js';
 import { enviarRecuperacion } from '../services/email.service.js';
 
 const RONDAS_BCRYPT = 12;
@@ -17,15 +17,21 @@ const RONDAS_BCRYPT = 12;
 // es parecido exista o no la cuenta (defensa contra ataques cronometrados).
 const HASH_FALSO = bcrypt.hashSync('contrasena-falsa-para-igualar-tiempos', RONDAS_BCRYPT);
 
-// Regla 2: la clave ingresada decide el tipo de cuenta que se crea
-//  - clave de organizador -> cuenta de organizador (la autoriza un administrador)
-//  - clave de visitante   -> cuenta de visitante (la autoriza un organizador)
+// Regla 2: la CLAVE es opcional y decide el tipo de cuenta que se crea
+//  - sin clave                   -> cuenta de VISITANTE (queda autorizada al instante)
+//  - con la clave de organizador -> cuenta de ORGANIZADOR (la autoriza un administrador)
+//  - con una clave incorrecta    -> error (no se crea ninguna cuenta)
 // Regla 17: nombre, gmail, DNI, teléfono y contraseña son obligatorios (lo valida schemas.js).
 export const registro = asyncHandler(async (req, res) => {
   const { nombre, gmail, dni, numero_tel, contrasena, clave } = req.body;
 
-  const rol = await rolPorClave(clave);
-  if (!rol) throw new AppError(403, 'La clave de registro es incorrecta');
+  let rol = 'visitante';
+  if (clave) {
+    if (!(await claveOrganizadorValida(clave))) {
+      throw new AppError(403, 'La clave es incorrecta. Déjala vacía si quieres crear una cuenta de visitante.');
+    }
+    rol = 'organizador';
+  }
 
   await verificarDisponibilidad({ gmail, dni });
   const hash = await bcrypt.hash(contrasena, RONDAS_BCRYPT);
@@ -37,7 +43,7 @@ export const registro = asyncHandler(async (req, res) => {
       });
     } else {
       await prisma.visitante.create({
-        data: { nombre, gmail, dni, numero_tel, contrasena: hash, aprobacion: false },
+        data: { nombre, gmail, dni, numero_tel, contrasena: hash, aprobacion: true },
       });
     }
   } catch (err) {
@@ -52,7 +58,7 @@ export const registro = asyncHandler(async (req, res) => {
     mensaje:
       rol === 'organizador'
         ? 'Cuenta de organizador creada. Un administrador debe autorizarla antes de que puedas iniciar sesión.'
-        : 'Cuenta de visitante creada. Un organizador debe autorizarla antes de que puedas iniciar sesión.',
+        : 'Cuenta de visitante creada. Ya puedes iniciar sesión.',
   });
 });
 

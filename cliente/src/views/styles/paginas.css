@@ -136,3 +136,45 @@ a.navbar__usuario { text-decoration: none; color: inherit; }
 @media (min-width: 640px) {
   .tarjeta-formulario { padding: 1.6rem 2rem 1.8rem; }
 }
+
+/* ===== v5 ===== */
+
+/* Aviso de cuentas sin autorizar (solo administrador) */
+.insignia-aviso {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  padding: 0 0.4rem;
+  margin-left: 0.4rem;
+  background: var(--rojo);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
+.navbar__aviso {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem 0.5rem;
+  padding: 0.45rem 1rem;
+  background: var(--vino);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-align: center;
+}
+.navbar__aviso a { color: #ffd9a0; text-decoration: underline; }
+.navbar__aviso .material-symbols-rounded { color: var(--naranja); }
+
+/* Fila de visitante: sin columna de aprobación */
+@media (min-width: 900px) {
+  .fila--cuenta.fila--sin-aprobacion {
+    grid-template-columns: 0.5fr 1.2fr 2fr 1fr 1.1fr auto;
+    grid-template-areas: 'id nombre gmail dni tel acciones';
+  }
+}

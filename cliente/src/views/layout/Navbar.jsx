@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../controllers/AuthContext.jsx';
 import { useModal } from '../../controllers/ModalContext.jsx';
+import { usePendientes } from '../../controllers/usePendientes.js';
 import Icono from '../components/Icono.jsx';
 import LogoCirculo from '../components/LogoCirculo.jsx';
 
@@ -17,6 +18,8 @@ export default function Navbar() {
   const [busqueda, setBusqueda] = useState('');
 
   const esOrganizador = usuario?.rol === 'organizador';
+  // Solo el administrador puede autorizar cuentas, por eso solo él ve el aviso
+  const pendientes = usePendientes(Boolean(esOrganizador && usuario.administrador));
 
   // El menú del celular se cierra al cambiar de pantalla
   useEffect(() => {
@@ -111,6 +114,11 @@ export default function Navbar() {
               </NavLink>
               <NavLink to="/gestion/cuentas" className={claseEnlace}>
                 Cuentas
+                {pendientes > 0 && (
+                  <span className="insignia-aviso" aria-label={`${pendientes} sin autorizar`}>
+                    {pendientes}
+                  </span>
+                )}
               </NavLink>
               {usuario.administrador && (
                 <button type="button" className="navbar__enlace" onClick={abrir('clave-registro')}>
@@ -134,6 +142,17 @@ export default function Navbar() {
           )}
         </nav>
       </div>
+
+      {/* Aviso para el administrador: hay cuentas esperando autorización */}
+      {pendientes > 0 && (
+        <div className="navbar__aviso" role="status">
+          <Icono nombre="notifications_active" />
+          <span>
+            Hay {pendientes} {pendientes === 1 ? 'usuario sin autorizar' : 'usuarios sin autorizar'}.{' '}
+            <Link to="/gestion/cuentas">Míralos en Cuentas</Link>
+          </span>
+        </div>
+      )}
     </header>
   );
 }

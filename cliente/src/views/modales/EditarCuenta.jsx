@@ -32,7 +32,8 @@ export default function EditarCuenta({ cuenta, tipo = 'organizador', onCerrar })
   const [errores, setErrores] = useState({});
   const [ver, setVer] = useState(false);
 
-  const puedeCambiarAprobacion = Boolean(cuenta.puede_gestionar);
+  // Solo las cuentas de organizador se autorizan; los visitantes no necesitan autorización
+  const puedeCambiarAprobacion = tipo === 'organizador' && Boolean(cuenta.puede_gestionar);
 
   const cambiar = (campo) => (e) => setValores((v) => ({ ...v, [campo]: e.target.value }));
 
@@ -97,7 +98,7 @@ export default function EditarCuenta({ cuenta, tipo = 'organizador', onCerrar })
         </Campo>
 
         {puedeCambiarAprobacion && (
-          <Campo etiqueta="Aprobación:" id="cue-aprob" ayuda="Si la deshabilitas, su sesión se cerrará.">
+          <Campo etiqueta="Aprobación:" id="cue-aprob" ayuda="Si la desautorizas, su sesión se cerrará.">
             <button
               id="cue-aprob"
               type="button"
@@ -105,7 +106,7 @@ export default function EditarCuenta({ cuenta, tipo = 'organizador', onCerrar })
               onClick={() => setAprobada((a) => !a)}
               aria-pressed={aprobada}
             >
-              {aprobada ? 'True' : 'False'}
+              {aprobada ? 'Autorizado' : 'Desautorizado'}
             </button>
           </Campo>
         )}

@@ -12,61 +12,58 @@ const validarClave = (v) => {
   return '';
 };
 
-// Solo el administrador ve y modifica las claves de registro (el servidor también lo valida).
+// Solo el administrador ve y modifica la clave de registro de organizadores (el servidor también lo valida).
 export default function ClaveRegistro({ onCerrar }) {
   const { mostrarAviso } = useModal();
   const { claves, cargando, error, recargar, guardar, guardando, errorGuardar } = useClaves();
-  const [valores, setValores] = useState({ clave_organizador: '', clave_visitante: '' });
-  const [errores, setErrores] = useState({});
+  const [clave, setClave] = useState('');
+  const [errorCampo, setErrorCampo] = useState('');
 
   const restaurar = () => {
     if (!claves) return;
-    setValores({ clave_organizador: claves.clave_organizador ?? '', clave_visitante: claves.clave_visitante ?? '' });
-    setErrores({});
+    setClave(claves.clave_organizador ?? '');
+    setErrorCampo('');
   };
 
-  // Cuando llegan (o se actualizan) las claves guardadas, se muestran en los campos
+  // Cuando llega (o se actualiza) la clave guardada, se muestra en el campo
   useEffect(restaurar, [claves]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const cambiar = (campo) => (e) => setValores((v) => ({ ...v, [campo]: e.target.value }));
 
   const enviar = async (e) => {
     e.preventDefault();
-    const nuevos = {
-      clave_organizador: validarClave(valores.clave_organizador),
-      clave_visitante: validarClave(valores.clave_visitante),
-    };
-    if (!nuevos.clave_visitante && valores.clave_organizador.trim() === valores.clave_visitante.trim()) {
-      nuevos.clave_visitante = 'Debe ser diferente a la clave de organizador';
-    }
-    setErrores(nuevos);
-    if (nuevos.clave_organizador || nuevos.clave_visitante) return;
+    const err = validarClave(clave);
+    setErrorCampo(err);
+    if (err) return;
 
-    const r = await guardar({
-      clave_organizador: valores.clave_organizador.trim(),
-      clave_visitante: valores.clave_visitante.trim(),
-    });
+    const r = await guardar({ clave_organizador: clave.trim() });
     if (r.ok) {
-      mostrarAviso('Claves actualizadas correctamente');
+      mostrarAviso('Clave actualizada correctamente');
       recargar();
     }
   };
 
   return (
-    <ModalBase onCerrar={onCerrar} ancho="normal" etiqueta="Claves de registro">
+    <ModalBase onCerrar={onCerrar} ancho="normal" etiqueta="Clave de registro">
       <h2 className="modal__titulo">Clave</h2>
       <p className="modal__subtitulo modal__subtitulo--linea">Solo lo pueden saber empleados</p>
 
       <form onSubmit={enviar} noValidate>
-        <Campo etiqueta="Clave Organizador:" id="clave-org" error={errores.clave_organizador}>
-          <input id="clave-org" className="entrada" value={valores.clave_organizador} onChange={cambiar('clave_organizador')} maxLength={100} disabled={cargando} autoComplete="off" spellCheck={false} aria-invalid={Boolean(errores.clave_organizador)} />
-        </Campo>
-        <Campo etiqueta="Clave Visitante:" id="clave-vis" error={errores.clave_visitante}>
-          <input id="clave-vis" className="entrada" value={valores.clave_visitante} onChange={cambiar('clave_visitante')} maxLength={100} disabled={cargando} autoComplete="off" spellCheck={false} aria-invalid={Boolean(errores.clave_visitante)} />
+        <Campo etiqueta="Clave Organizador:" id="clave-org" error={errorCampo}>
+          <input
+            id="clave-org"
+            className="entrada"
+            value={clave}
+            onChange={(e) => setClave(e.target.value)}
+            maxLength={100}
+            disabled={cargando}
+            autoComplete="off"
+            spellCheck={false}
+            aria-invalid={Boolean(errorCampo)}
+          />
         </Campo>
 
         <p className="modal__texto modal__texto--chico">
-          Quien se registre con la clave de organizador crea una cuenta de organizador; con la de visitante, una cuenta de visitante.
+          Quien se registre escribiendo esta clave crea una cuenta de organizador. Quien deje la clave vacía crea una cuenta de
+          visitante. La clave distingue mayúsculas de minúsculas.
         </p>
 
         {error && <p className="modal__error" role="alert">{error}</p>}

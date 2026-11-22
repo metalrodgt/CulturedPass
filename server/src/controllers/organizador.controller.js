@@ -88,7 +88,7 @@ export const cambiarAprobacion = asyncHandler(async (req, res) => {
     enviarCuentaAutorizada({ cuenta, rol: 'organizador' }).catch(() => {});
   }
   res.json({
-    mensaje: cuenta.aprobacion ? 'Cuenta autorizada. Se le avisó por correo.' : 'Cuenta deshabilitada. Su sesión se cerró.',
+    mensaje: cuenta.aprobacion ? 'Cuenta autorizada. Se le avisó por correo.' : 'Cuenta desautorizada. Su sesión se cerró.',
     cuenta,
   });
 });
@@ -131,4 +131,11 @@ export const eliminar = asyncHandler(async (req, res) => {
   ]);
   await prisma.organizador.delete({ where: { id_organizador: req.params.id } });
   res.json({ mensaje: 'Cuenta eliminada', eventosEliminados: eventos, boletosEliminados: boletos });
+});
+
+// Cantidad de cuentas de organizador sin autorizar (para el aviso de la barra de navegación).
+// Solo lo consulta un administrador (ver gestion.routes.js), que es quien puede autorizarlas.
+export const pendientes = asyncHandler(async (req, res) => {
+  const organizadores = await prisma.organizador.count({ where: { aprobacion: false } });
+  res.json({ organizadores });
 });

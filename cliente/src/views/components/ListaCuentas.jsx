@@ -11,7 +11,8 @@ import Mensaje from './Mensaje.jsx';
 import MenuFiltro from './MenuFiltro.jsx';
 import Icono from './Icono.jsx';
 
-// Lista de cuentas con buscador y filtro. tipo: 'organizador' | 'visitante'
+// Lista de cuentas con buscador (y filtro de autorización solo para organizadores).
+// tipo: 'organizador' | 'visitante'
 export default function ListaCuentas({ tipo }) {
   const { abrirModal, mostrarAviso, refrescarDatos } = useModal();
   const { cuentas, cargando, error } = useListaCuentas(tipo);
@@ -56,7 +57,10 @@ export default function ListaCuentas({ tipo }) {
           />
         </div>
         <h3 className="barra-cuentas__titulo">{esVisitantes ? 'VISITANTES' : 'ORGANIZADORES'}</h3>
-        <MenuFiltro opciones={FILTROS_APROBACION} valor={filtro} onCambiar={setFiltro} clase="boton--amarillo" />
+        {/* Los visitantes no necesitan autorización: el filtro solo tiene sentido con organizadores */}
+        {!esVisitantes && (
+          <MenuFiltro opciones={FILTROS_APROBACION} valor={filtro} onCambiar={setFiltro} clase="boton--amarillo" />
+        )}
       </div>
 
       {cargando && <Mensaje tipo="cargando">Cargando cuentas…</Mensaje>}
@@ -70,9 +74,10 @@ export default function ListaCuentas({ tipo }) {
       {visibles.map((c) => {
         const id = idDeCuenta(c);
         const claseAprobacion = c.aprobacion ? 'boton--verde' : 'boton--rojo';
+        const textoAprobacion = c.aprobacion ? 'Autorizado' : 'Desautorizado';
         const hayAcciones = puedeEditar(c) || puedeEliminar(c);
         return (
-          <article key={`${tipo}-${id}`} className="fila fila--cuenta">
+          <article key={`${tipo}-${id}`} className={`fila fila--cuenta ${esVisitantes ? 'fila--sin-aprobacion' : ''}`}>
             <div className="dato dato--id">
               <span className="dato__titulo">ID</span>
               <span className="dato__valor">{id}</span>
@@ -96,23 +101,25 @@ export default function ListaCuentas({ tipo }) {
               <span className="dato__titulo">Teléfono</span>
               <span className="dato__valor">{c.numero_tel}</span>
             </div>
-            <div className="dato dato--aprob">
-              <span className="dato__titulo">Aprobación</span>
-              {puedeAutorizar(c) ? (
-                <button
-                  type="button"
-                  className={`boton boton--chico ${claseAprobacion}`}
-                  onClick={() => alternarAprobacion(c)}
-                  disabled={procesando === id}
-                  title="Clic para autorizar o deshabilitar"
-                >
-                  {c.aprobacion ? 'True' : 'False'}
-                </button>
-              ) : (
-                // Sin permiso: se muestra solo el estado, sin que parezca un botón
-                <span className={`boton boton--chico estado-fijo ${claseAprobacion}`}>{c.aprobacion ? 'True' : 'False'}</span>
-              )}
-            </div>
+            {!esVisitantes && (
+              <div className="dato dato--aprob">
+                <span className="dato__titulo">Aprobación</span>
+                {puedeAutorizar(c) ? (
+                  <button
+                    type="button"
+                    className={`boton boton--chico ${claseAprobacion}`}
+                    onClick={() => alternarAprobacion(c)}
+                    disabled={procesando === id}
+                    title="Clic para autorizar o desautorizar"
+                  >
+                    {textoAprobacion}
+                  </button>
+                ) : (
+                  // Sin permiso: se muestra solo el estado, sin que parezca un botón
+                  <span className={`boton boton--chico estado-fijo ${claseAprobacion}`}>{textoAprobacion}</span>
+                )}
+              </div>
+            )}
             {hayAcciones && (
               <div className="fila__acciones">
                 {puedeEditar(c) && (

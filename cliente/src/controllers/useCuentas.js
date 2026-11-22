@@ -20,8 +20,8 @@ export function useListaCuentas(tipo) {
 
 export const FILTROS_APROBACION = [
   { valor: 'todas', texto: 'Todas' },
-  { valor: 'true', texto: 'True (autorizadas)' },
-  { valor: 'false', texto: 'False (sin autorizar)' },
+  { valor: 'true', texto: 'Autorizadas' },
+  { valor: 'false', texto: 'Desautorizadas' },
 ];
 
 // Búsqueda por id, nombre, gmail o DNI + filtro por aprobación (true / false)

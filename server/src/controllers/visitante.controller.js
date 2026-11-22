@@ -5,10 +5,10 @@ import { AppError } from '../utils/AppError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { actualizarCuenta, verificarDisponibilidad } from '../utils/cuentas.js';
 import { calcularHuella } from '../utils/huella.js';
-import { enviarCuentaAutorizada, enviarDatosActualizados } from '../services/email.service.js';
+import { enviarDatosActualizados } from '../services/email.service.js';
 
 // Gestión de cuentas de VISITANTES:
-//  - Autorizar / deshabilitar: cualquier organizador (la regla 2 exige que un organizador autorice la cuenta).
+//  - Los visitantes NO necesitan autorización: su cuenta queda habilitada al registrarse.
 //  - Editar datos y eliminar la cuenta: SOLO un administrador (ver gestion.routes.js).
 //  - Todos los organizadores ven los datos de la cuenta (incluidos DNI y teléfono).
 const SELECT_SEGURO = {
@@ -33,26 +33,8 @@ export const listar = asyncHandler(async (req, res) => {
     cuentas: cuentas.map((c) => ({
       ...c,
       puede_editar: esAdmin,
-      puede_gestionar: true, // autorizar / deshabilitar: cualquier organizador
       puede_eliminar: esAdmin,
     })),
-  });
-});
-
-// Autorizar / deshabilitar. Al deshabilitar, su sesión se cierra sola (middleware autenticarCuenta).
-export const cambiarAprobacion = asyncHandler(async (req, res) => {
-  const antes = await obtener(req.params.id);
-  const cuenta = await prisma.visitante.update({
-    where: { id_visitante: req.params.id },
-    data: { aprobacion: req.body.aprobacion },
-    select: SELECT_SEGURO,
-  });
-  if (!antes.aprobacion && cuenta.aprobacion) {
-    enviarCuentaAutorizada({ cuenta, rol: 'visitante' }).catch(() => {});
-  }
-  res.json({
-    mensaje: cuenta.aprobacion ? 'Cuenta autorizada. Se le avisó por correo.' : 'Cuenta deshabilitada. Su sesión se cerró.',
-    cuenta,
   });
 });
 

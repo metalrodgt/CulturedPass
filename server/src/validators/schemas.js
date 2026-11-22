@@ -4,14 +4,20 @@ import { diaSiguiente } from '../utils/fechas.js';
 const SIN_HTML_UNA_LINEA = /^[^<>\r\n]*$/;
 const SIN_HTML = /^[^<>]*$/;
 
-// Texto obligatorio, recortado, con largo máximo y SIN los caracteres < > (anti inyección HTML)
+// Texto obligatorio, recortado, con largo máximo y SIN los caracteres < > (anti inyección HTML).
+// Normalización: se quitan espacios al inicio/fin y los espacios repetidos se juntan en uno
+// ("Juan    Pérez" -> "Juan Pérez"), y los acentos se guardan siempre en la misma forma (NFC).
+const normalizar = (s, multilinea) =>
+  multilinea ? s.normalize('NFC') : s.normalize('NFC').replace(/[ \t]+/g, ' ');
+
 const texto = (etiqueta, max, { multilinea = false } = {}) =>
   z
     .string({ required_error: `${etiqueta} es obligatorio`, invalid_type_error: `${etiqueta} debe ser texto` })
     .trim()
     .min(1, `${etiqueta} es obligatorio`)
     .max(max, `${etiqueta} no puede superar los ${max} caracteres`)
-    .regex(multilinea ? SIN_HTML : SIN_HTML_UNA_LINEA, `${etiqueta} contiene caracteres no permitidos`);
+    .regex(multilinea ? SIN_HTML : SIN_HTML_UNA_LINEA, `${etiqueta} contiene caracteres no permitidos`)
+    .transform((s) => normalizar(s, multilinea));
 
 const gmail = z
   .string({ required_error: 'El correo es obligatorio' })
@@ -23,17 +29,21 @@ const gmail = z
 const telefono = z
   .string({ required_error: 'El teléfono es obligatorio' })
   .trim()
-  .regex(/^[0-9+() -]{6,20}$/, 'El teléfono no es válido (6 a 20 caracteres: números, + ( ) -)');
+  // Solo números y + ( ) - espacio, entre 6 y 20 caracteres y al menos 6 dígitos
+  .regex(/^(?=(?:\D*\d){6})[0-9+() -]{6,20}$/, 'El teléfono no es válido (mínimo 6 números; se permiten + ( ) - y espacios)');
 
 const dni = z
   .string({ required_error: 'El DNI es obligatorio' })
   .trim()
-  .regex(/^[0-9]{7,8}$/, 'El DNI debe tener 7 u 8 números, sin puntos');
+  // 7 u 8 números, sin puntos ni espacios y sin empezar con 0 (así "1234567" y "01234567" no cuentan como DNI distintos)
+  .regex(/^[1-9][0-9]{6,7}$/, 'El DNI debe tener 7 u 8 números, sin puntos ni espacios y sin empezar con 0');
 
 const contrasena = z
   .string({ required_error: 'La contraseña es obligatoria' })
   .min(8, 'La contraseña debe tener al menos 8 caracteres')
-  .max(72, 'La contraseña no puede superar los 72 caracteres');
+  .max(72, 'La contraseña no puede superar los 72 caracteres')
+  // bcrypt solo usa los primeros 72 BYTES (los acentos y emojis ocupan más de 1)
+  .refine((v) => Buffer.byteLength(v, 'utf8') <= 72, 'La contraseña es demasiado larga');
 
 const hora = z
   .string({ required_error: 'La hora es obligatoria' })
@@ -61,10 +71,8 @@ export const registroSchema = z.object({
   dni,
   numero_tel: telefono,
   contrasena,
-  clave: z
-    .string({ required_error: 'La clave de registro es obligatoria' })
-    .min(1, 'La clave de registro es obligatoria')
-    .max(100, 'La clave es demasiado larga'),
+  // Regla 2: la clave es OPCIONAL. Sin clave se crea una cuenta de visitante; con la clave del personal, de organizador.
+  clave: z.string().trim().max(100, 'La clave es demasiado larga').optional(),
 });
 
 export const loginSchema = z.object({
@@ -168,15 +176,9 @@ const claveRegistro = z
   .max(100, 'La clave no puede superar los 100 caracteres')
   .regex(/^[^<>\s]+$/, 'La clave no puede tener espacios ni los caracteres < >');
 
-export const clavesSchema = z
-  .object({
-    clave_organizador: claveRegistro,
-    clave_visitante: claveRegistro,
-  })
-  .refine((d) => d.clave_organizador !== d.clave_visitante, {
-    message: 'Las claves de organizador y de visitante deben ser diferentes',
-    path: ['clave_visitante'],
-  });
+export const clavesSchema = z.object({
+  clave_organizador: claveRegistro,
+});
 
 // ----- Recuperación de contraseña -----
 export const recuperarSchema = z.object({ gmail });
