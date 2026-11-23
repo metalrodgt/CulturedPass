@@ -2,10 +2,11 @@ import { useAccionesEvento } from '../../controllers/useGestionEventos.js';
 import { useModal } from '../../controllers/ModalContext.jsx';
 import ModalBase from './ModalBase.jsx';
 import BotonCerrar from '../components/BotonCerrar.jsx';
+import Icono from '../components/Icono.jsx';
 import FormularioEvento from './FormularioEvento.jsx';
 
 export default function EditarEvento({ evento, onCerrar }) {
-  const { mostrarAviso, refrescarDatos } = useModal();
+  const { abrirModal, mostrarAviso, refrescarDatos } = useModal();
   const { editar, cargando, error } = useAccionesEvento();
 
   const guardar = async (datos) => {
@@ -26,6 +27,14 @@ export default function EditarEvento({ evento, onCerrar }) {
       <h2 className="modal__titulo">Editar evento</h2>
       <p className="modal__subtitulo modal__subtitulo--linea">Modificar datos</p>
       <FormularioEvento evento={evento} onEnviar={guardar} onCancelar={onCerrar} cargando={cargando} error={error} textoBoton="Guardar" />
+
+      {/* Regla 27: cancelar el evento (abre una ventana de confirmación; no se puede deshacer) */}
+      <div className="modal__peligro">
+        <p>¿Este evento ya no se va a realizar?</p>
+        <button type="button" className="boton boton--rojo" onClick={() => abrirModal('cancelar-evento', { evento })}>
+          <Icono nombre="event_busy" /> Cancelar evento
+        </button>
+      </div>
     </ModalBase>
   );
 }

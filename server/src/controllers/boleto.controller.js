@@ -68,6 +68,11 @@ export const cancelar = asyncHandler(async (req, res) => {
   // Regla 21: si el evento ya finalizó, el boleto no se puede eliminar
   if (!boleto || boleto.evento.estado === 'Finalizado') fallar();
 
+  // Regla 21: si el evento fue cancelado, sus boletos tampoco se pueden eliminar
+  if (boleto.evento.estado === 'Cancelado') {
+    throw new AppError(409, 'El evento fue cancelado: el boleto ya no se puede eliminar.');
+  }
+
   // Regla 20
   if (boleto.estado === 'Presente') {
     throw new AppError(409, 'No se puede cancelar un boleto que ya fue marcado como presente');
@@ -131,6 +136,13 @@ export const listarPorEvento = asyncHandler(async (req, res) => {
 export const marcarAsistencia = asyncHandler(async (req, res) => {
   const id = req.params.id;
   const { estado } = req.body;
+
+  // En un evento cancelado no se marca asistencia (nadie va a asistir)
+  const actual = await prisma.boleto.findUnique({ where: { id_boleto: id }, select: { evento: { select: { estado: true } } } });
+  if (!actual) throw new AppError(404, 'El boleto no existe');
+  if (actual.evento.estado === 'Cancelado') {
+    throw new AppError(409, 'El evento fue cancelado: no se puede marcar asistencia');
+  }
 
   const datos =
     estado === 'Presente'

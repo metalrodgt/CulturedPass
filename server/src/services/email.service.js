@@ -141,3 +141,18 @@ export const enviarRecuperacion = ({ cuenta, enlace }) =>
     html: `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto"><h2>Cambiar contraseña</h2><p>Hola <strong>${h(cuenta.nombre)}</strong>, recibimos un pedido para cambiar la contraseña de tu cuenta.</p><p><a href="${h(enlace)}" style="display:inline-block;background:#5e120a;color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:bold">Cambiar mi contraseña</a></p><p>Si el botón no funciona, copia este enlace en tu navegador:<br>${h(enlace)}</p><p>El enlace vence en 1 hora y solo se puede usar una vez. Si no lo pediste tú, ignora este correo: tu contraseña no cambia.</p></div>`,
     texto: `Hola ${cuenta.nombre}, para cambiar tu contraseña ingresa a este enlace (vence en 1 hora y se usa una sola vez):\n${enlace}\nSi no lo pediste tú, ignora este correo.`,
   });
+
+// Aviso a todos los inscriptos cuando un organizador cancela el evento
+export const notificarEventoCancelado = async ({ evento, destinatarios }) => {
+  const fecha = fechaLegible(evento.fecha_evento);
+  for (const d of destinatarios) {
+    // Secuencial a propósito: evita ráfagas que el proveedor SMTP podría bloquear
+    // eslint-disable-next-line no-await-in-loop
+    await enviarSeguro({
+      para: d.gmail,
+      asunto: unaLinea(`Evento cancelado: ${evento.nombre_evento}`),
+      html: `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto"><h2>Evento cancelado</h2><p>Hola <strong>${h(d.nombre)}</strong>, lamentamos avisarte que el evento <strong>${h(evento.nombre_evento)}</strong>, que se iba a realizar el ${h(fecha)} a las ${h(evento.hora_inicio)} en ${h(evento.ubicacion)}, fue <strong>cancelado</strong>.</p><p>Tu boleto ya no es válido. Lo puedes ver en "Mis boletos" marcado como cancelado.</p></div>`,
+      texto: `Hola ${d.nombre}, el evento "${evento.nombre_evento}" (${fecha} ${evento.hora_inicio}, ${evento.ubicacion}) fue cancelado. Tu boleto ya no es válido: lo puedes ver en "Mis boletos" marcado como cancelado.`,
+    });
+  }
+};

@@ -8,9 +8,10 @@ import Icono from './Icono.jsx';
 //  - 'gestion'   : panel del organizador (editar / asistencia / eliminar)
 export default function TarjetaEvento({ evento, variante = 'disponible', onVerMas, onEditar, onAsistencia, onEliminar }) {
   const finalizado = evento.estado === 'Finalizado';
-  const agotado = !finalizado && evento.cupo_disponible <= 0;
-  const claseEstado = finalizado ? 'etiqueta--apagada' : agotado ? 'etiqueta--agotado' : '';
-  const textoEstado = finalizado ? 'Finalizado' : agotado ? 'Agotado' : 'Disponible';
+  const cancelado = evento.estado === 'Cancelado';
+  const agotado = !finalizado && !cancelado && evento.cupo_disponible <= 0;
+  const claseEstado = cancelado ? 'etiqueta--cancelado' : finalizado ? 'etiqueta--apagada' : agotado ? 'etiqueta--agotado' : '';
+  const textoEstado = cancelado ? 'Cancelado' : finalizado ? 'Finalizado' : agotado ? 'Agotado' : 'Disponible';
 
   // Si el evento termina al día siguiente se aclara cuál es ese día (ej. "02:00 (18/11)")
   const horario = `${evento.hora_inicio} - ${evento.hora_finalizacion}${
@@ -71,8 +72,14 @@ export default function TarjetaEvento({ evento, variante = 'disponible', onVerMa
                 type="button"
                 className="boton"
                 onClick={onEditar}
-                disabled={finalizado}
-                title={finalizado ? 'No se pueden editar eventos finalizados' : 'Editar evento'}
+                disabled={finalizado || cancelado}
+                title={
+                  cancelado
+                    ? 'No se pueden editar eventos cancelados'
+                    : finalizado
+                      ? 'No se pueden editar eventos finalizados'
+                      : 'Editar evento'
+                }
               >
                 Editar
               </button>

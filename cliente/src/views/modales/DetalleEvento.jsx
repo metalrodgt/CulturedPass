@@ -25,7 +25,8 @@ export default function DetalleEvento({ evento: inicial, onCerrar }) {
   }, [inicial.id_evento]);
 
   const finalizado = evento.estado === 'Finalizado';
-  const agotado = !finalizado && evento.cupo_disponible <= 0;
+  const cancelado = evento.estado === 'Cancelado';
+  const agotado = !finalizado && !cancelado && evento.cupo_disponible <= 0;
 
   return (
     <ModalBase onCerrar={onCerrar} ancho="grande" etiqueta={`Detalle de ${evento.nombre_evento}`}>
@@ -54,7 +55,9 @@ export default function DetalleEvento({ evento: inicial, onCerrar }) {
       </dl>
 
       <div className="modal__acciones">
-        {finalizado ? (
+        {cancelado ? (
+          <span className="etiqueta etiqueta--cancelado">Evento cancelado</span>
+        ) : finalizado ? (
           <span className="etiqueta etiqueta--apagada">Evento finalizado</span>
         ) : (
           <button

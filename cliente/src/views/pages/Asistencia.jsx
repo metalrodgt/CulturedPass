@@ -22,6 +22,8 @@ export default function Asistencia() {
   const [menuAbierto, setMenuAbierto] = useState(false);
 
   const volver = () => navigate('/gestion/eventos');
+  // En un evento cancelado no se marca asistencia
+  const cancelado = evento?.estado === 'Cancelado';
 
   const titulo = (
     <>
@@ -91,6 +93,7 @@ export default function Asistencia() {
         </button>
       </div>
 
+      {cancelado && <Mensaje tipo="error">Este evento fue cancelado: ya no se puede marcar asistencia.</Mensaje>}
       {cargando && <Mensaje tipo="cargando">Cargando asistencia…</Mensaje>}
       {error && <Mensaje tipo="error">{error}</Mensaje>}
       {!cargando && !error && visibles.length === 0 && (
@@ -127,7 +130,7 @@ export default function Asistencia() {
                   type="button"
                   className={`boton boton--chico ${b.estado === 'Presente' ? 'boton--verde' : 'boton--rojo'}`}
                   onClick={() => cambiarEstado(b)}
-                  disabled={procesando === b.id_boleto}
+                  disabled={cancelado || procesando === b.id_boleto}
                   title="Clic para cambiar el estado"
                 >
                   {b.estado}

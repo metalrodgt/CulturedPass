@@ -4,7 +4,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { aFechaDB, aHoraDB, hoyEnZona } from '../utils/fechas.js';
 import { serializarEvento } from '../utils/serializar.js';
 import { finalizarEventosVencidos } from '../services/evento.service.js';
-import { notificarCambiosEvento } from '../services/email.service.js';
+import { notificarCambiosEvento, notificarEventoCancelado } from '../services/email.service.js';
 
 const SELECT_PUBLICO = {
   id_evento: true,
@@ -120,8 +120,12 @@ export const editar = asyncHandler(async (req, res) => {
 
     const actual = await tx.evento.findUnique({ where: { id_evento: id } });
     if (!actual) throw new AppError(404, 'El evento no existe');
+    // Los eventos finalizados y los cancelados ya no se pueden editar
     if (actual.estado === 'Finalizado') {
       throw new AppError(409, 'No se pueden editar eventos finalizados');
+    }
+    if (actual.estado === 'Cancelado') {
+      throw new AppError(409, 'No se pueden editar eventos cancelados');
     }
 
     // Regla 15: el cupo total no puede quedar por debajo de los ya inscriptos
@@ -170,13 +174,45 @@ export const editar = asyncHandler(async (req, res) => {
 });
 
 export const finalizar = asyncHandler(async (req, res) => {
-  const existente = await prisma.evento.findUnique({ where: { id_evento: req.params.id }, select: { id_evento: true } });
+  const existente = await prisma.evento.findUnique({
+    where: { id_evento: req.params.id },
+    select: { estado: true },
+  });
   if (!existente) throw new AppError(404, 'El evento no existe');
+  if (existente.estado === 'Cancelado') throw new AppError(409, 'El evento fue cancelado: no se puede marcar como finalizado');
   const evento = await prisma.evento.update({
     where: { id_evento: req.params.id },
     data: { estado: 'Finalizado' },
   });
   res.json({ mensaje: 'Evento marcado como finalizado', evento: serializarEvento(evento) });
+});
+
+// Regla 27: cancelar un evento. Solo se cancelan eventos Disponibles y no se puede deshacer.
+// El evento queda en estado "Cancelado": no se edita, no admite inscripciones y sus boletos se conservan.
+// Se avisa por correo a todos los inscriptos.
+export const cancelar = asyncHandler(async (req, res) => {
+  const id = req.params.id;
+  await finalizarEventosVencidos(); // un evento cuya hora ya pasó cuenta como finalizado, no se puede cancelar
+
+  const { evento, destinatarios } = await prisma.$transaction(async (tx) => {
+    // Bloquea la fila: mientras se cancela, nadie puede inscribirse ni editar el evento
+    await tx.$queryRaw`SELECT id_evento FROM evento WHERE id_evento = ${id} FOR UPDATE`;
+
+    const actual = await tx.evento.findUnique({ where: { id_evento: id } });
+    if (!actual) throw new AppError(404, 'El evento no existe');
+    if (actual.estado === 'Cancelado') throw new AppError(409, 'El evento ya fue cancelado');
+    if (actual.estado === 'Finalizado') throw new AppError(409, 'No se puede cancelar un evento que ya finalizó');
+
+    const cancelado = await tx.evento.update({ where: { id_evento: id }, data: { estado: 'Cancelado' } });
+    const inscriptos = await tx.boleto.findMany({ where: { id_evento: id }, select: { nombre: true, gmail: true } });
+    return { evento: cancelado, destinatarios: inscriptos };
+  });
+
+  const serializado = serializarEvento(evento);
+  if (destinatarios.length) {
+    notificarEventoCancelado({ evento: serializado, destinatarios }).catch(() => {});
+  }
+  res.json({ mensaje: 'Evento cancelado', evento: serializado, notificados: destinatarios.length });
 });
 
 // Borrado en cascada: elimina también todos los boletos del evento

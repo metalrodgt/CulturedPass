@@ -18,6 +18,7 @@ export function useAccionesEvento() {
     setError,
     crear: (datos) => ejecutar(() => eventosApi.crear(datos)),
     editar: (id, datos) => ejecutar(() => eventosApi.editar(id, datos)),
+    cancelar: (id) => ejecutar(() => eventosApi.cancelar(id)),
     eliminar: (id) => ejecutar(() => eventosApi.eliminar(id)),
   };
 }

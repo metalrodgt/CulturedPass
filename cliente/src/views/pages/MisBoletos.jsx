@@ -70,6 +70,7 @@ export default function MisBoletos() {
                 <span className="dato__sub">
                   {fechaLegible(b.evento.fecha_evento)} · {b.evento.hora_inicio}
                   {b.evento.estado === 'Finalizado' ? ' · finalizado' : ''}
+                  {b.evento.estado === 'Cancelado' ? ' · evento cancelado' : ''}
                 </span>
               </div>
               <div className="dato dato--ancho">

@@ -9,6 +9,7 @@ import CuentaNoAprobada from './CuentaNoAprobada.jsx';
 import CrearEvento from './CrearEvento.jsx';
 import EditarEvento from './EditarEvento.jsx';
 import EliminarEvento from './EliminarEvento.jsx';
+import CancelarEvento from './CancelarEvento.jsx';
 import EditarCuenta from './EditarCuenta.jsx';
 import EliminarCuenta from './EliminarCuenta.jsx';
 import ClaveRegistro from './ClaveRegistro.jsx';
@@ -26,6 +27,7 @@ const MODALES = {
   'crear-evento': CrearEvento,
   'editar-evento': EditarEvento,
   'eliminar-evento': EliminarEvento,
+  'cancelar-evento': CancelarEvento,
   'editar-cuenta': EditarCuenta,
   'eliminar-cuenta': EliminarCuenta,
   'clave-registro': ClaveRegistro,

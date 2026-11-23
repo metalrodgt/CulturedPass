@@ -45,6 +45,7 @@ export const inscribir = async (idEvento, usuario) => {
           const actual = await tx.evento.findUnique({ where: { id_evento: idEvento }, select: { estado: true } });
           if (!actual) throw new AppError(404, 'El evento no existe');
           if (actual.estado === 'Finalizado') throw new AppError(409, 'El evento ya finalizó');
+          if (actual.estado === 'Cancelado') throw new AppError(409, 'El evento fue cancelado: ya no admite inscripciones');
           throw new AppError(409, 'El evento está agotado: no quedan cupos disponibles');
         }
 

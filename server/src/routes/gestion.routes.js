@@ -27,6 +27,8 @@ router.get('/eventos', eventos.listarGestion);
 router.post('/eventos', validar(eventoSchema), eventos.crear);
 router.put('/eventos/:id', id, validar(eventoSchema), eventos.editar);
 router.patch('/eventos/:id/finalizar', id, eventos.finalizar);
+// Regla 27: cancelar un evento disponible (no se puede deshacer)
+router.patch('/eventos/:id/cancelar', id, eventos.cancelar);
 router.delete('/eventos/:id', id, eventos.eliminar);
 
 // --- Asistencia (regla 17: se valida por código de boleto o por DNI) ---
